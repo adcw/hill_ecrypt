@@ -6,14 +6,18 @@ from utils import are_coprime
 
 if __name__ == '__main__':
     alphabet_len = 26
-    key_len = 4
-
-    # Generate coprime integers
-    coprime = [x for x in range(alphabet_len) if are_coprime(x, alphabet_len)]
+    key_len = 3
 
     # Generate the key
-    key = hill.random_key(4, coprime)
+    key = hill.random_key(key_len, alphabet_len)
     print(key)
-    a = hill.encrypt_chunk(np.matrix('6 24 1;13 16 10;20 17 15'), "ACT")
-    print(a)
+
+    # encypt phrase
+    phrase = "XDD"
+    encrypted = hill.encrypt_chunk(key, phrase)
+    print(f"{phrase} encrypted: {encrypted}")
+
+    # decrypt phrase
+    decrypted = hill.decrypt_chunk(key, encrypted, alphabet_len)
+    print(f"decrypted: {decrypted}")
     pass
