@@ -1,6 +1,6 @@
 import random
 
-from numpy import matrix, reshape
+from numpy import matrix, reshape, linalg
 
 def encrypt():
     pass
@@ -27,8 +27,8 @@ def random_key(key_len: int, key_elems: list[int]):
     return matrix(reshape(elems, (key_len, key_len)))
 
 
-def invert_key():
-    pass
+def invert_key(matr: matrix):
+    return linalg.inv(matr)
 
 
 def change_key():
