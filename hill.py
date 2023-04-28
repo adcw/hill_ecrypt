@@ -16,7 +16,7 @@ def random_key(key_len: int, key_elems: list[int]):
 
     :param key_len: The length of key (the dimension of square matrix)
     :param key_elems: Elements used to build key
-    Must be co-prime with the alphabet for key to work
+    Must be co-prime with the alphabet length for key to work
     :return: The key as matrix
     """
 
