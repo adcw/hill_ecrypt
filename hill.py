@@ -88,9 +88,19 @@ def random_key(key_len: int, alphabet_len: int):
     # then return valid key
     while True:
         key = gen()
-        det = round(linalg.det(key))
-        if det != 0 and are_coprime(det, alphabet_len) == 1:
+        if is_valid_key(key, alphabet_len):
             return key
+
+
+def is_valid_key(key: matrix, alphabet_len: int):
+    """
+    Checks if a square matrix is a valid key in given alphabet length.
+    :param key: the key
+    :param alphabet_len: the alphabet's length
+    :return: boolean, decision if the key is valid
+    """
+    det = round(linalg.det(key))
+    return det != 0 and are_coprime(det, alphabet_len)
 
 
 def invert_key(matr: matrix, alphabet_len: int):
