@@ -1,23 +1,27 @@
 import numpy as np
-from numpy import matrix
+from numpy import matrix, array
+from string import ascii_uppercase as alphabet
+import pandas as pd
 
 import hill
-from utils import are_coprime
+
+
+def encrypt_test():
+    text = 'Attach files by dragging & dropping, selecting or pasting them.'
+
+    # load letter frequencies
+    letter_data = pd.read_csv("./english_letters.csv")
+    freqs = letter_data['frequency'].tolist()
+
+    key = hill.random_key(5, len(alphabet))
+
+    encrypted = hill.encrypt(text, key, alphabet, freqs=freqs)
+    print(f"Encrypted: {encrypted}")
+
+    decrypted = hill.decrypt(encrypted, key, alphabet, freqs=freqs)
+    print(f"Decrypted: {decrypted}")
+
 
 if __name__ == '__main__':
-    alphabet_len = 26
-    key_len = 5
-
-    # Generate the key
-    key = hill.random_key(key_len, alphabet_len)
-    print(key)
-
-    # encypt phrase
-    phrase = "aaaab"
-    encrypted = hill.encrypt_chunk(key, phrase)
-    print(f"{phrase} encrypted: {encrypted}")
-
-    # decrypt phrase
-    decrypted = hill.decrypt_chunk(key, encrypted, alphabet_len)
-    print(f"{encrypted} decrypted: {decrypted}")
+    encrypt_test()
     pass
