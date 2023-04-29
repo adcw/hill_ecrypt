@@ -84,13 +84,28 @@ def random_key(key_len: int, alphabet_len: int):
         # Return array reshaped to a matrix
         return matrix(reshape(elems, (key_len, key_len)))
 
-    # repeat until the determinant is non-zero and coprime with alphabet length,
+    # repeat until the key is valid,
     # then return valid key
     while True:
         key = gen()
-        det = round(linalg.det(key))
-        if det != 0 and are_coprime(det, alphabet_len) == 1:
+        if is_valid_key(key, alphabet_len):
             return key
+
+
+def is_valid_key(key: matrix, alphabet_len: int):
+    """
+    Checks if a square matrix is a valid key in given alphabet length.
+    :param key: the key
+    :param alphabet_len: the alphabet's length
+    :return: boolean, decision if the key is valid
+    """
+
+    # calculate the determinant
+    det = round(linalg.det(key))
+
+    # the key is valid if and only if the determinant is non-zero
+    # and is coprime with alphabet length
+    return det != 0 and are_coprime(det, alphabet_len)
 
 
 def invert_key(matr: matrix, alphabet_len: int):
