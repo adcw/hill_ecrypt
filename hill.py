@@ -1,6 +1,5 @@
 import random
-from math import gcd
-from numpy import matrix, reshape, linalg, matmul, mod
+from numpy import matrix, reshape, linalg, matmul
 from utils import are_coprime
 
 import utils
@@ -18,6 +17,19 @@ def encrypt():
                        (  int  )
         modulo int's in result
         convert back to letters, append them to encrypted text
+
+    handle a remainder:
+        if there is any remainder left after the split,
+        fill if with random letters until it creates a valid chunk.
+        Ideally the letters should be chosen according
+        to the language's real letter distribution
+
+        for example consider the key of lenght equal to 4 and word:
+        STRA WBER Y
+        'Y' is a remainder. We should add more letters so it satisfies the key's length:
+        for example:
+        STRA WBER YADZ
+        the next steps are analogous as described above
     :return:
     """
     pass
