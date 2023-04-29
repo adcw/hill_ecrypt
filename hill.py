@@ -17,6 +17,7 @@ def chunkify(numbers: list[int], chunk_size: int, freqs: list[float] | None = No
     Split list of numbers to chunks of given size.
 
     If there is any remainder:
+
         if freqs are provided, select random letter indexes according
         to passed frequencies
 
