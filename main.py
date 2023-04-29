@@ -33,8 +33,17 @@ def randomize_key_test():
     print(f"Changed key: \n{changed_key}")
 
 
+def swap_rows_test():
+    alphabet_len = len(alphabet)
+    key_l = 3
+    key = hill_key.random_key(key_l, alphabet_len)
+    print(f"Key: \n{key}")
+
+    changed_key = hill_key.swap_rows(key)
+    print(f"Changed key: \n{changed_key}")
+
+
 if __name__ == '__main__':
-    # encrypt_test()
-    randomize_key_test()
+    swap_rows_test()
 
     pass

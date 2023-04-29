@@ -109,3 +109,32 @@ def randomize_key(key: matrix, percentage: float, alphabet_len: int) -> matrix:
         flipped_key = randomize()
         if is_valid_key(flipped_key, alphabet_len):
             return flipped_key
+
+
+def swap_rows(key: matrix) -> matrix:
+    """
+    Swap two random rows from a key.
+    The operation doesn't require a key validation,
+    because swapping a square matrix rows doesn't change it's
+    determinant at all.
+    :param key: the key
+    :return: the key with swapped rows
+    """
+
+    # the length of a key
+    key_len = key.shape[0]
+
+    # the list of row indexes
+    indexes = [x for x in range(key_len)]
+
+    # choose two random indexes
+    iloc1, iloc2 = random.sample(indexes, k=2)
+
+    # swap rows of giver indexes
+    temp = key[iloc1].copy()
+    key[iloc1] = key[iloc2]
+    key[iloc2] = temp
+
+    # return swapped key, we don't have to check if the key is still valid,
+    # because swapping two rows of a square matrix doesn't change it's determinant.
+    return key
