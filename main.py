@@ -3,7 +3,8 @@ from numpy import matrix, array
 from string import ascii_uppercase as alphabet
 import pandas as pd
 
-import hill
+from hill_encrypt import encrypt, decrypt
+import hill_key
 
 
 def encrypt_test():
@@ -13,12 +14,12 @@ def encrypt_test():
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
 
-    key = hill.random_key(5, len(alphabet))
+    key = hill_key.random_key(5, len(alphabet))
 
-    encrypted = hill.encrypt(text, key, alphabet, freqs=freqs)
+    encrypted = encrypt(text, key, alphabet, freqs=freqs)
     print(f"Encrypted: {encrypted}")
 
-    decrypted = hill.decrypt(encrypted, key, alphabet, freqs=freqs)
+    decrypted = decrypt(encrypted, key, alphabet, freqs=freqs)
     print(f"Decrypted: {decrypted}")
 
 
