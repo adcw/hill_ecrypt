@@ -23,6 +23,18 @@ def encrypt_test():
     print(f"Decrypted: {decrypted}")
 
 
+def randomize_key_test():
+    alphabet_len = len(alphabet)
+    key_l = 3
+    key = hill_key.random_key(key_l, alphabet_len)
+    print(f"Key: \n{key}")
+
+    changed_key = hill_key.randomize_key(key, percentage=0.5, alphabet_len=alphabet_len)
+    print(f"Changed key: \n{changed_key}")
+
+
 if __name__ == '__main__':
-    encrypt_test()
+    # encrypt_test()
+    randomize_key_test()
+
     pass
