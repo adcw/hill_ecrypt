@@ -1,12 +1,67 @@
 import random
-from numpy import matrix, reshape, linalg, matmul
+from numpy import matrix, reshape, linalg, matmul, array, ceil
 from utils import are_coprime
 
 import utils
 
 
-def encrypt():
+def preprocess_text(text: str, alphabet: str):
+    text = text.upper()
+    processed = [c for c in text if c in alphabet.upper()]
+    return "".join(processed)
+
+
+def chunkify(numbers: list[int], chunk_size: int, freqs: list[float] | None = None, alphabet_len: int | None = None) -> \
+        list[list[int]]:
     """
+    Split list of numbers to chunks of given size.
+
+    If there is any reminder:
+        if freqs are provided, select random letter indexes according
+        to passed frequencies
+
+        if alphabet_len is provided, select random indexes from 0 to
+        alphabet length
+
+        if none of above is provided, select zeros.
+
+    :param numbers: list to split
+    :param chunk_size: the size of a single chunk
+    :param freqs: optional list of each letter frequency in alphabet
+    :param alphabet_len: optional length of alphabet
+    :return: the list of numbers splitted into chunks.
+    """
+
+    result = []
+    n_chunks = int(ceil(len(numbers) / chunk_size))
+
+    for i in range(n_chunks):
+        result.append(numbers[i * chunk_size:(i + 1) * chunk_size])
+
+    # if the last chunk is not full, fill it with random letters
+    if len(result[-1]) < chunk_size:
+        to_draw = chunk_size - len(result[-1])
+        if freqs is not None:
+            letter_codes = [x for x in range(len(freqs))]
+            drawn = random.choices(letter_codes, freqs, k=to_draw)
+        elif alphabet_len is not None:
+            letter_codes = [x for x in range(alphabet_len)]
+            drawn = random.choices(letter_codes, k=to_draw)
+        else:
+            drawn = [0] * to_draw
+        result[-1] = result[-1] + drawn
+
+    return result
+
+
+def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = None) -> str:
+    """
+    :param text: text to encode
+    :param key: a key to be used - square matrix
+    :param alphabet: the alphabet
+    :param freqs: optional; frequencies of each letter in language. If not provided, chunkify function will select random letters
+    to fill remainders.
+
     how to do:
         n is len of a side of a matrix (height essentially)
         split text to chunks of size n
@@ -32,33 +87,51 @@ def encrypt():
         the next steps are analogous as described above
     :return:
     """
-    pass
+
+    # preprocess text
+    processed = preprocess_text(text, alphabet)
+
+    # convert text to list of letter indexes
+    text_numbers = [alphabet.find(x) for x in processed]
+
+    # split text to chunks
+    chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=len(alphabet))
+
+    # encrypt each chunk and join into single string
+    encrypted_chunks = array([encrypt_chunk(key, c) for c in chunks]).flatten()
+
+    # convert letter indexes to a string
+    encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
+
+    return encrypted_text
 
 
-def encrypt_chunk(key: matrix, chunk: str) -> str:
+def encrypt_chunk(key: matrix, chunk: list[int]) -> list[int]:
     """
     encryption of chunk
     :param key: key
-    :param chunk: string of size key.shape[0] in open text
-    :return: encrpted sting
+    :param chunk: a text encoded as indexes of alphabet's letters
+    :return: encrypted indexes
     """
-    text_numbers = [ord(char) - 65 for char in chunk.upper()]
-    matr = matmul(key, text_numbers)
+    matr = matmul(key, chunk)
     matr = matrix(matr % 26).tolist()[0]
 
-    encrypted = [chr(x + 65) for x in matr]
-    return ''.join(encrypted)
+    return matr
 
 
-def decrypt():
+def decrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = None) -> str:
     """
     The same aproach as in encrypt
     :return: decrypted string
     """
-    pass
+    # calculate inversion
+    inv_key = invert_key(key, len(alphabet))
+
+    # return encryption using inverted key (actual decryption)
+    return encrypt(text, inv_key, alphabet, freqs)
 
 
-def decrypt_chunk(key: matrix, chunk: str, alphabet_len: int):
+def decrypt_chunk(key: matrix, chunk: list[int], alphabet_len: int):
     """
     Decryption of a chunk
     :param key: the key used to encrypt the chunk
@@ -98,9 +171,12 @@ def random_key(key_len: int, alphabet_len: int):
 
     # repeat until the key is valid,
     # then return valid key
+    iters = 0
     while True:
         key = gen()
+        iters += 1
         if is_valid_key(key, alphabet_len):
+            print(f"Key generated in {iters} iterations")
             return key
 
 
