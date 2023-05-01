@@ -2,7 +2,7 @@ import numpy as np
 from numpy import matrix, array
 from string import ascii_uppercase as alphabet
 import pandas as pd
-
+import numpy as np
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key, randomize_key, swap_rows, invert_key, randomize_rows
 from crack_cipher import shotgun_hillclimbing
@@ -48,6 +48,7 @@ def swap_rows_test():
 def crack_test():
     key_l = 3
     alphabet_len = len(alphabet)
+
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
            'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
            'much to be tall like its companions—the pines and firs which grew around it.' \
@@ -73,10 +74,51 @@ def crack_test():
     key = random_key(key_l, alphabet_len)
     encrypted = encrypt(text, key, alphabet, freqs)
 
-    cracked_key = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
+    cracked_key = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, buffer_len=7)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
 
     pass
+
+
+def determinant_test():
+    # Tworzenie macierzy
+    A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+    # Wyświetlenie wyznacznika oryginalnej macierzy
+    print("Wyznacznik macierzy przed modyfikacją: ", np.linalg.det(A))
+
+    # Dodanie drugiego wiersza do pierwszego i trzeciego
+    A[0] = A[0] + A[1]
+    A[2] = A[2] + A[1]
+
+    # Wyświetlenie wyznacznika macierzy po dodaniu wierszy
+    print("Wyznacznik macierzy po dodaniu wierszy: ", np.linalg.det(A))
+
+    A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    # Zamiana drugiego i trzeciego wiersza miejscami
+    A[1], A[2] = A[2], A[1]
+
+    # Wyświetlenie wyznacznika macierzy po zamianie wierszy
+    print("Wyznacznik macierzy po zamianie wierszy: ", np.linalg.det(A))
+
+    A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    # Zamiana drugiej i trzeciej kolumny miejscami
+    A[:, 1], A[:, 2] = A[:, 2], A[:, 1].copy()
+
+    # Wyświetlenie wyznacznika macierzy po zamianie kolumn
+    print("Wyznacznik macierzy po zamianie kolumn: ", np.linalg.det(A))
+
+    A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    # Dodanie do pierwszego wiersza wartości drugiego wiersza pomnożonego przez 2
+    A[0] = A[0] + 2 * A[1]
+
+    # Wyświetlenie wyznacznika macierzy po dodaniu wiersza pomnożonego przez skalar
+    print("Wyznacznik macierzy po dodaniu wiersza pomnożonego przez skalar: ", np.linalg.det(A))
+
+    A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    A[2] += 2 * A[0]
+    print("Wyznacznik macierzy po dodanie do jednego wiersza innego wiersza przemnożonego przez stałą: ",
+          np.linalg.det(A))
 
 
 if __name__ == '__main__':
@@ -95,7 +137,8 @@ if __name__ == '__main__':
     # inv_key = invert_key(key, alphabet_len)
     # decrypted = encrypt(text, inv_key, alphabet, freqs)
 
-    crack_test()
+    # crack_test()
+    determinant_test()
 
     # key = random_key(5, 26)
     # changed = randomize_rows(key, perc_rows=0.1, perc_elems=0.2, alphabet_len=26)
