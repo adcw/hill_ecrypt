@@ -1,14 +1,15 @@
 import numpy as np
 
 from ngram import Ngram_score as ns
-from hill_key import random_key, invert_key, randomize_key
+from hill_key import random_key, invert_key, randomize_key, randomize_rows
 from hill_encrypt import encrypt
 from time import time
 import random
+from math import ceil
 
 
-def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 6000,
-                         freqs: list[float] | None = None, buffer_len: int = 7):
+def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 10, j_max: int = 4500,
+                         freqs: list[float] | None = None, buffer_len: int = 10):
     scorer = ns('./english_bigrams.txt')
 
     alphabet_len = len(alphabet)
@@ -20,17 +21,22 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
 
     wordlen = len(text)
 
-    while time() - t0 < t_limit:
-        perc = (1 - ((time() - t0) / t_limit)) ** 4
+    perc = 1
 
-        key_new = randomize_key(key_old, perc, alphabet_len)
+    while time() - t0 < t_limit:
+        if perc <= 0.01:
+            perc = 0.01
+        else:
+            perc = (1 - ((time() - t0) / t_limit))
+
+        key_new = randomize_rows(key_old, perc_rows=perc / 2, perc_elems=perc, alphabet_len=alphabet_len)
         decoded_new = encrypt(text, key_new, alphabet, freqs)
         value_new = scorer.score(decoded_new)
 
         if value_new > value_old:
-            print(f"decoded: {decoded_new[:25]}, value: {value_new}, perc = {perc}")
+            print(f"decoded: {decoded_new[:25]}, value: {value_new / wordlen}, perc = {perc}")
 
-            if value_new / wordlen > -1:
+            if value_new / wordlen > -2.4:
                 print(f'BEST: {decoded_new}')
                 break
             key_old, value_old = key_new, value_new
@@ -57,8 +63,8 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
                 if all_same:
                     break
 
-                if random.random() < 0.8:
-                    value_old, key_old = random.choice(best_results[:buffer_len])
+                if random.random() < 0.95:
+                    value_old, key_old = random.choice(best_results[:int(ceil(buffer_len * (perc ** 0.15)))])
                 else:
                     key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
                     value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))

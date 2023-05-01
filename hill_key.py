@@ -69,6 +69,34 @@ def change_key():
     pass
 
 
+def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int):
+    def randomize():
+        key_len = key.shape[0]
+        n_rows_to_change = int(ceil(key_len * perc_rows))
+        indexes = [x for x in range(key_len)]
+        chosen_rows = random.sample(indexes, n_rows_to_change)
+
+        changed = key.copy()
+
+        for row_index in chosen_rows:
+            row = key[row_index].copy().tolist()[0]
+            n_elems_to_change = int(ceil(key_len * perc_elems))
+            chosen_elems = random.sample(indexes, n_elems_to_change)
+
+            for elem_index in chosen_elems:
+                row[elem_index] = (row[elem_index] + random.randint(0, alphabet_len - 1)) % alphabet_len
+
+            changed[row_index] = row
+
+        return changed
+
+    # repeat until a valid key is generated
+    while True:
+        randomized_key = randomize()
+        if is_valid_key(randomized_key, alphabet_len):
+            return randomized_key
+
+
 def randomize_key(key: matrix, percentage: float, alphabet_len: int) -> matrix:
     """
     Randomizes elements of a key by choosing random positions of the matrix and
@@ -99,7 +127,7 @@ def randomize_key(key: matrix, percentage: float, alphabet_len: int) -> matrix:
 
         # iterate over indexes and change the list accordingly
         for i in indexes_to_change:
-            m_list[i] = (m_list[i] + random.randint(1, 25)) % alphabet_len
+            m_list[i] = (m_list[i] + random.randint(1, alphabet_len - 1)) % alphabet_len
 
         # return matrix with list's elements
         return matrix(reshape(m_list, (len(key), len(key))))

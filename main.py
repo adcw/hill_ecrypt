@@ -4,7 +4,7 @@ from string import ascii_uppercase as alphabet
 import pandas as pd
 
 from hill_encrypt import encrypt, decrypt
-from hill_key import random_key, randomize_key, swap_rows, invert_key
+from hill_key import random_key, randomize_key, swap_rows, invert_key, randomize_rows
 from crack_cipher import shotgun_hillclimbing
 
 
@@ -48,9 +48,24 @@ def swap_rows_test():
 def crack_test():
     key_l = 3
     alphabet_len = len(alphabet)
-    text = 'Since different users might have different needs and different assumptions, the NumPy developers' \
-           'refused to guess and instead decided to raise a ValueError whenever one tries to evaluate an array' \
-           'in Boolean context. Applying and to two numpy arrays causes the two arrays to be evaluated in Boolean context'
+    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
+           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
+           'much to be tall like its companions—the pines and firs which grew around it.' \
+           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
+           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
+           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
+           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
+           'which made it feel more unhappy than before. And yet all this while the tree' \
+           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
+           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
+           "wish I were as tall as the other trees, then I would spread out my branches on' \
+           'every side, and my top would over-look the wide world. I should have the birds' \
+           'zbuilding their nests on my boughs, and when the wind blew, I should bow with' \
+           '    stately dignity like my tall companions." The tree was so discontented, that it" \
+            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
+           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
+           'glittering on the ground, a hare would come springing along, and jump right over' \
+           'the little tree; and then how mortified it would feel!'
 
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
@@ -81,5 +96,8 @@ if __name__ == '__main__':
     # decrypted = encrypt(text, inv_key, alphabet, freqs)
 
     crack_test()
+
+    # key = random_key(5, 26)
+    # changed = randomize_rows(key, perc_rows=0.1, perc_elems=0.2, alphabet_len=26)
 
     pass
