@@ -75,7 +75,7 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
         itr += 1
         j += 1
     if len(best_results) > 0:
-        best_results.sort(reverse=True)
+        best_results.sort(reverse=True, key=lambda x_: x_[0])
         value_old, key_old = best_results[0]
 
         print(f'{buffer_len} best results:')
