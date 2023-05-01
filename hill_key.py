@@ -166,3 +166,20 @@ def swap_rows(key: matrix) -> matrix:
     # return swapped key, we don't have to check if the key is still valid,
     # because swapping two rows of a square matrix doesn't change it's determinant.
     return key
+
+def add_rows_with_random(key: matrix, alphabet_len: int) -> matrix:
+    x = random.randint(1, alphabet_len-1)
+
+    indexes = [x for x in range(key.shape[0])]
+    iloc1, iloc2 = random.sample(indexes, 2)
+    # Get the row to multiply
+    row_to_multiply = key[iloc1]
+    row_to_change = key[iloc2]
+
+    # Multiply the row by the scalar
+    new_row = row_to_multiply * x + row_to_change
+    new_row = new_row % 26
+    new_row = new_row.tolist()[0]
+    # Replace the old row with the new one in the matrix
+    key[iloc2] = new_row
+    return key
