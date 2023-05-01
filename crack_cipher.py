@@ -1,14 +1,14 @@
 import numpy as np
 
 from ngram import Ngram_score as ns
-from hill_key import random_key, invert_key, randomize_key, randomize_rows
+from hill_key import random_key, invert_key, randomize_key, randomize_rows, add_rows_with_random
 from hill_encrypt import encrypt
 from time import time
 import random
 from math import ceil
 
 
-def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 10, j_max: int = 4500,
+def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 10, j_max: int = 6000,
                          freqs: list[float] | None = None, buffer_len: int = 10):
     scorer = ns('./english_bigrams.txt')
 
@@ -28,8 +28,10 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
             perc = 0.01
         else:
             perc = (1 - ((time() - t0) / t_limit))
-
-        key_new = randomize_rows(key_old, perc_rows=perc / 2, perc_elems=perc, alphabet_len=alphabet_len)
+        if random.random() < 0.10:
+            key_new = add_rows_with_random(key_old, alphabet_len=alphabet_len)
+        else:
+            key_new = randomize_rows(key_old, perc_rows=perc / 2, perc_elems=perc, alphabet_len=alphabet_len)
         decoded_new = encrypt(text, key_new, alphabet, freqs)
         value_new = scorer.score(decoded_new)
 
@@ -68,7 +70,6 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
                 else:
                     key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
                     value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-
             else:
                 key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
                 value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
