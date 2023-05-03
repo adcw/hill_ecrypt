@@ -1,11 +1,15 @@
+import random
+from array import array
+
 import numpy as np
 from numpy import matrix, array
 from string import ascii_uppercase as alphabet
 import pandas as pd
 import numpy as np
-from hill_encrypt import encrypt, decrypt
-from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random, invert_key
+from hill_encrypt import encrypt, decrypt, invert_key
+from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random, randomize_rows, smart_rand_rows
 from crack_cipher import shotgun_hillclimbing
+from sklearn.preprocessing import normalize
 
 
 def encrypt_test():
@@ -46,7 +50,7 @@ def swap_rows_test():
 
 
 def crack_test():
-    key_l = 3
+    key_l = 4
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
@@ -78,6 +82,7 @@ def crack_test():
 
     cracked_key = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
+    print(f"Cracked text: {cracked_text}")
 
     pass
 
@@ -120,7 +125,7 @@ def determinant_test():
 
 
 def smart_swap_test():
-    key_len = 6
+    key_len = 10
     alphabet_len = len(alphabet)
     key = random_key(key_len, alphabet_len)
 
@@ -148,6 +153,22 @@ def smart_swap_test():
 
     encrypted = encrypt(text, key, alphabet, freqs)
 
+    key_changed = randomize_rows(invert_key(key, alphabet_len), 0.1, 0.5, alphabet_len)
+    decrypted = decrypt(encrypted, key, alphabet, freqs)
+    decrypted_err = decrypt(encrypted, key_changed, alphabet, freqs)
+
+    with open('./english_bigrams.txt', 'r') as file:
+        content = file.readlines()
+        splitted = array([line.replace("\n", "").split(" ") for line in content])
+        splitted[:, 1] = normalize([splitted[:, 1]])
+        d = {k: float(v) for k, v in splitted}
+
+    fixed = smart_rand_rows(key_changed, encrypted, alphabet, d, freqs)
+
+    fixed_text = encrypt(encrypted, fixed, alphabet, freqs)
+
+    pass
+
 
 if __name__ == '__main__':
     # swap_rows_test()
@@ -167,6 +188,8 @@ if __name__ == '__main__':
 
     crack_test()
     # determinant_test()
+
+    # smart_swap_test()
 
     # key = random_key(5, 26)
     # changed = add_rows_with_random(key, alphabet_len=26)

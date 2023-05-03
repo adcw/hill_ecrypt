@@ -1,10 +1,19 @@
 import random
 from numpy import matrix, reshape, linalg, matmul, array, ceil
 
-from hill_key import invert_key
 from utils import are_coprime
 
 import utils
+
+
+def invert_key(matr: matrix, alphabet_len: int):
+    """
+    Calculate the given key inversion
+    :param matr: the key
+    :param alphabet_len: the length of the alphabet
+    :return: the key inversion
+    """
+    return utils.mod_inverse_matrix(matr, alphabet_len)
 
 
 def preprocess_text(text: str, alphabet: str):

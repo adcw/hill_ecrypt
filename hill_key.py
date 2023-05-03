@@ -1,9 +1,10 @@
 import random
-from numpy import matrix, reshape, ceil
+from numpy import matrix, reshape, ceil, array
 from numpy.linalg import linalg
 
 import utils
 from utils import are_coprime
+from hill_encrypt import encrypt, invert_key
 
 
 def random_key(key_len: int, alphabet_len: int):
@@ -55,26 +56,13 @@ def is_valid_key(key: matrix, alphabet_len: int):
     return det != 0 and are_coprime(det, alphabet_len)
 
 
-def invert_key(matr: matrix, alphabet_len: int):
-    """
-    Calculate the given key inversion
-    :param matr: the key
-    :param alphabet_len: the length of the alphabet
-    :return: the key inversion
-    """
-    return utils.mod_inverse_matrix(matr, alphabet_len)
-
-
-def change_key():
-    pass
-
-
-def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int):
+def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int,
+                   r_indexes: list[int] | None = None):
     def randomize():
         key_len = key.shape[0]
         n_rows_to_change = int(ceil(key_len * perc_rows))
         indexes = [x for x in range(key_len)]
-        chosen_rows = random.sample(indexes, n_rows_to_change)
+        chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
 
         changed = key.copy()
 
@@ -186,3 +174,30 @@ def add_rows_with_random(key: matrix, alphabet_len: int) -> matrix:
     # Replace the old row with the new one in the matrix
     new_key[iloc2] = new_row
     return new_key
+
+
+def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, freqs: list[float] | None = None):
+    key_len = key.shape[0]
+    decrypted_err = encrypt(cipher, key, alphabet, freqs)
+    alphabet_len = len(alphabet)
+
+    bigram_values = []
+    for i in range(len(decrypted_err) - 1):
+        chars = decrypted_err[i:i + 2]
+        bigram_values.append(bigram_data[chars])
+
+    recalculated = [2 * bigram_values[0]]
+    for i in range(len(bigram_values) - 1):
+        x, y = bigram_values[i: i + 2]
+        recalculated.append(x + y)
+
+    recalculated.append(2 * bigram_values[-1])
+    recalculated = reshape(recalculated, (int(len(recalculated) / key_len), key_len))
+
+    summed = recalculated.sum(axis=0)
+
+    to_change = random.choices([x for x in range(key_len)], summed ** 10)
+    fixed = randomize_rows(key, r_indexes=to_change, alphabet_len=alphabet_len,
+                           perc_elems=0.5,
+                           perc_rows=0.01)
+    return fixed
