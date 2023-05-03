@@ -4,7 +4,7 @@ from string import ascii_uppercase as alphabet
 import pandas as pd
 import numpy as np
 from hill_encrypt import encrypt, decrypt
-from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random
+from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random, invert_key
 from crack_cipher import shotgun_hillclimbing
 
 
@@ -72,9 +72,11 @@ def crack_test():
     freqs = letter_data['frequency'].tolist()
 
     key = random_key(key_l, alphabet_len)
+    print(f"THE KEY: {key}")
+
     encrypted = encrypt(text, key, alphabet, freqs)
 
-    cracked_key = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, buffer_len=7)
+    cracked_key = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
 
     pass
@@ -82,7 +84,7 @@ def crack_test():
 
 def determinant_test():
     # Tworzenie macierzy
-    r = random_key(3,  alphabet_len = len(alphabet))
+    r = random_key(3, alphabet_len=len(alphabet))
     A = r.copy()
 
     # Wyświetlenie wyznacznika oryginalnej macierzy
@@ -115,6 +117,36 @@ def determinant_test():
 
     # Wyświetlenie wyznacznika macierzy po dodaniu wiersza pomnożonego przez skalar
     print("Wyznacznik macierzy po dodaniu wiersza pomnożonego przez skalar: ", np.linalg.det(A))
+
+
+def smart_swap_test():
+    key_len = 6
+    alphabet_len = len(alphabet)
+    key = random_key(key_len, alphabet_len)
+
+    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
+           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
+           'much to be tall like its companions—the pines and firs which grew around it.' \
+           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
+           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
+           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
+           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
+           'which made it feel more unhappy than before. And yet all this while the tree' \
+           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
+           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
+           "wish I were as tall as the other trees, then I would spread out my branches on' \
+           'every side, and my top would over-look the wide world. I should have the birds' \
+           'building their nests on my boughs, and when the wind blew, I should bow with' \
+           '    stately dignity like my tall companions." The tree was so discontented, that it" \
+            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
+           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
+           'glittering on the ground, a hare would come springing along, and jump right over' \
+           'the little tree; and then how mortified it would feel!'
+
+    letter_data = pd.read_csv("./english_letters.csv")
+    freqs = letter_data['frequency'].tolist()
+
+    encrypted = encrypt(text, key, alphabet, freqs)
 
 
 if __name__ == '__main__':
