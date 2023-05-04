@@ -5,6 +5,9 @@ from utils import are_coprime
 
 import utils
 
+int_to_char = dict()
+char_to_int = dict()
+glob_alphabet = []
 
 def invert_key(matr: matrix, alphabet_len: int):
     """
@@ -16,10 +19,6 @@ def invert_key(matr: matrix, alphabet_len: int):
     return utils.mod_inverse_matrix(matr, alphabet_len)
 
 
-def preprocess_text(text: str, alphabet: str):
-    text = text.upper()
-    processed = [c for c in text if c in alphabet.upper()]
-    return "".join(processed)
 
 
 def chunkify(numbers: list[int], chunk_size: int, freqs: list[float] | None = None, alphabet_len: int | None = None) -> \
@@ -99,12 +98,17 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
         the next steps are analogous as described above
     :return:
     """
+    global glob_alphabet, int_to_char, char_to_int
+    if alphabet != glob_alphabet:
+        glob_alphabet = alphabet
+        int_to_char = {k:v for k,v in enumerate(alphabet)}
+        char_to_int = {v:k for k,v in enumerate(alphabet)}
 
     # preprocess text
-    processed = preprocess_text(text, alphabet)
+
 
     # convert text to list of letter indexes
-    text_numbers = [alphabet.find(x) for x in processed]
+    text_numbers = [char_to_int.get(x) for x in text]
 
     # split text to chunks
     chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=len(alphabet))

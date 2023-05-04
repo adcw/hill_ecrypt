@@ -7,6 +7,10 @@ from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random,
 from crack_cipher import shotgun_hillclimbing, guess_key_len, guess_key_len
 from sklearn.preprocessing import normalize
 
+def preprocess_text(text: str, alphabet: str):
+    text = text.upper()
+    processed = [c for c in text if c in alphabet.upper()]
+    return "".join(processed)
 
 def encrypt_test():
     text = 'Attach files by dragging & dropping, selecting or pasting them.'
@@ -69,14 +73,14 @@ def crack_test():
            'the little tree; and then how mortified it would feel!'
 
     text = text * 4
-
+    processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
 
     key = random_key(key_l, alphabet_len)
     print(f"THE KEY: {key}")
 
-    encrypted = encrypt(text, key, alphabet, freqs)
+    encrypted = encrypt(processed, key, alphabet, freqs)
 
     cracked_key, old_value = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
@@ -110,11 +114,11 @@ def guess_me_keys_test():
 
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
-
+    processed = preprocess_text(text, alphabet)
     key = random_key(key_l, alphabet_len)
     print(f"THE KEY: {key}")
 
-    encrypted = encrypt(text, key, alphabet, freqs)
+    encrypted = encrypt(processed, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs)
     print(table)
     print(f'I guess key length is= {table[0][2]}')
@@ -186,8 +190,8 @@ def smart_swap_test():
 
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
-
-    encrypted = encrypt(text, key, alphabet, freqs)
+    processed = preprocess_text(text, alphabet)
+    encrypted = encrypt(processed, key, alphabet, freqs)
 
     key_changed = randomize_rows(invert_key(key, alphabet_len), 0.1, 0.5, alphabet_len)
     decrypted = decrypt(encrypted, key, alphabet, freqs)
