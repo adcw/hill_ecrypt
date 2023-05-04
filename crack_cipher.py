@@ -8,8 +8,8 @@ import random
 from sklearn.preprocessing import normalize
 
 
-def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 20, j_max: int = 2000,
-                         freqs: list[float] | None = None, buffer_len: int = 10):
+def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
+                         freqs: list[float] | None = None, buffer_len: int = 5):
     scorer = ns('./english_bigrams.txt')
 
     with open('./english_bigrams.txt', 'r') as file:
@@ -36,18 +36,27 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
         else:
             perc = (1 - ((time() - t0) / t_limit)) ** 0.9
 
-        if 1 >= perc > 0.6:
-            if random.random() < 0.8:
+        if 1 >= perc > 0.66:
+            if random.random() < 0.6:
                 key_new = add_rows_with_random(key_old, alphabet_len=alphabet_len)
             else:
                 key_new = randomize_rows(key_old, perc_rows=perc / 2, perc_elems=perc, alphabet_len=alphabet_len)
-        elif 0.6 >= perc > 0.4:
+        elif 0.66 >= perc > 0.33:
             if random.random() < 0.8:
                 key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
             else:
                 key_new = randomize_rows(key_old, perc_rows=perc / 2, perc_elems=perc, alphabet_len=alphabet_len)
         else:
             key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
+
+        # if 1 >= perc > 0.4:
+        #     if random.random() < 0.8:
+        #         key_new = add_rows_with_random(key_old, alphabet_len=alphabet_len)
+        #     else:
+        #         key_new = randomize_rows(key_old, perc_rows=perc / 2, perc_elems=perc, alphabet_len=alphabet_len)
+        #
+        # else:
+        # key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
 
         decoded_new = encrypt(text, key_new, alphabet, freqs)
         value_new = scorer.score(decoded_new)
@@ -72,7 +81,7 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
                 value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
             else:
                 elements = [x[0] for x in best_results]
-                percentile = np.percentile(elements, 0.75)
+                percentile = np.percentile(elements, 75)
 
                 if value_old > percentile:
                     best_results.append((value_old, key_old))
@@ -92,6 +101,19 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
     if not found and len(best_results) > 0:
         best_results.sort(reverse=True, key=lambda x_: x_[0])
         value_old, key_old = best_results[0]
+
+        print("IMPROVING THE BEST SOLUTION...")
+        for i in range(6000):
+            key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
+            decoded_new = encrypt(text, key_new, alphabet, freqs)
+            value_new = scorer.score(decoded_new)
+
+            if value_new > value_old:
+                print(f"decoded: {decoded_new[:25]}, value: {value_new / wordlen}, perc = {perc}, key = {key_new}")
+                key_old = key_new.copy()
+                value_old = value_new
+
+        best_results[0] = value_old, key_old
 
         print(f'{buffer_len} best results:')
         for x in best_results[:buffer_len]:

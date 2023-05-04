@@ -50,7 +50,7 @@ def swap_rows_test():
 
 
 def crack_test():
-    key_l = 4
+    key_l = 3
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
