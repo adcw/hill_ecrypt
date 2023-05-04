@@ -50,7 +50,7 @@ def swap_rows_test():
 
 
 def crack_test():
-    key_l = 3
+    key_l = 4
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
@@ -71,6 +71,8 @@ def crack_test():
            'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
            'glittering on the ground, a hare would come springing along, and jump right over' \
            'the little tree; and then how mortified it would feel!'
+
+    text = text * 4
 
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
@@ -125,7 +127,7 @@ def determinant_test():
 
 
 def smart_swap_test():
-    key_len = 10
+    key_len = 4
     alphabet_len = len(alphabet)
     key = random_key(key_len, alphabet_len)
 
@@ -155,7 +157,7 @@ def smart_swap_test():
 
     key_changed = randomize_rows(invert_key(key, alphabet_len), 0.1, 0.5, alphabet_len)
     decrypted = decrypt(encrypted, key, alphabet, freqs)
-    decrypted_err = decrypt(encrypted, key_changed, alphabet, freqs)
+    decrypted_err = decrypt(encrypted, invert_key(key_changed, alphabet_len), alphabet, freqs)
 
     with open('./english_bigrams.txt', 'r') as file:
         content = file.readlines()

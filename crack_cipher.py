@@ -6,6 +6,7 @@ from hill_encrypt import encrypt, invert_key
 from time import time
 import random
 from sklearn.preprocessing import normalize
+from tqdm import tqdm
 
 
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
@@ -102,8 +103,9 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
         best_results.sort(reverse=True, key=lambda x_: x_[0])
         value_old, key_old = best_results[0]
 
-        print("IMPROVING THE BEST SOLUTION...")
-        for i in range(6000):
+        print(f"BEST SOLUTION: {encrypt(text, key_old, alphabet, freqs)}")
+        print("IMPROVING...")
+        for _ in tqdm(range(6000)):
             key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
             decoded_new = encrypt(text, key_new, alphabet, freqs)
             value_new = scorer.score(decoded_new)

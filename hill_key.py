@@ -196,7 +196,7 @@ def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, 
 
     summed = recalculated.sum(axis=0)
 
-    to_change = random.choices([x for x in range(key_len)], summed ** 10)
+    to_change = random.choices([x for x in range(key_len)], summed ** 5)
     fixed = randomize_rows(key, r_indexes=to_change, alphabet_len=alphabet_len,
                            perc_elems=0.5,
                            perc_rows=0.01)
