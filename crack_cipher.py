@@ -6,8 +6,27 @@ from hill_encrypt import encrypt, invert_key
 from time import time
 import random
 from sklearn.preprocessing import normalize
+import threading as thr
 from tqdm import tqdm
 
+def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
+    table = []
+
+    def test(i):
+        matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5)
+        table.append([matrix, value, i])
+        pass
+
+    threads = []
+    for i in range(2, 11):
+        threads.append(
+            thr.Thread(target=test, args=[i])
+        )
+        threads[-1].start()
+    for t in threads:
+        t.join()
+    table.sort(key=lambda row: (row[1]), reverse=True)
+    return table
 
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
                          freqs: list[float] | None = None, buffer_len: int = 5):
@@ -68,6 +87,7 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
             if value_new / wordlen > -2.4:
                 print(f'BEST: {decoded_new}, key = \n{key_new}')
                 key_old = key_new
+                value_old = value_new
                 found = True
                 break
             key_old, value_old = key_new.copy(), value_new
@@ -124,4 +144,4 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
     print(f'elapsed time is {time() - t0} sec, used {itr} iterations')
 
     real_key = invert_key(key_old, alphabet_len)
-    return real_key
+    return real_key, value_old

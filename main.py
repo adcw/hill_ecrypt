@@ -1,14 +1,10 @@
 import random
-from array import array
-
-import numpy as np
-from numpy import matrix, array
 from string import ascii_uppercase as alphabet
 import pandas as pd
 import numpy as np
 from hill_encrypt import encrypt, decrypt, invert_key
 from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random, randomize_rows, smart_rand_rows
-from crack_cipher import shotgun_hillclimbing
+from crack_cipher import shotgun_hillclimbing,guess_key_len, guess_key_len
 from sklearn.preprocessing import normalize
 
 
@@ -82,12 +78,44 @@ def crack_test():
 
     encrypted = encrypt(text, key, alphabet, freqs)
 
-    cracked_key = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
+    cracked_key, old_value = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
     pass
 
+def guess_me_keys_test():
+    key_l = 6
+    alphabet_len = len(alphabet)
+
+    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
+           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
+           'much to be tall like its companions—the pines and firs which grew around it.' \
+           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
+           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
+           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
+           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
+           'which made it feel more unhappy than before. And yet all this while the tree' \
+           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
+           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
+           "wish I were as tall as the other trees, then I would spread out my branches on' \
+           'every side, and my top would over-look the wide world. I should have the birds' \
+           'building their nests on my boughs, and when the wind blew, I should bow with' \
+           '    stately dignity like my tall companions." The tree was so discontented, that it" \
+            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
+           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
+           'glittering on the ground, a hare would come springing along, and jump right over' \
+           'the little tree; and then how mortified it would feel!'
+
+    letter_data = pd.read_csv("./english_letters.csv")
+    freqs = letter_data['frequency'].tolist()
+
+    key = random_key(key_l, alphabet_len)
+    print(f"THE KEY: {key}")
+
+    encrypted = encrypt(text, key, alphabet, freqs)
+    table = guess_key_len(encrypted, alphabet, freqs=freqs)
+    pass
 
 def determinant_test():
     # Tworzenie macierzy
@@ -161,7 +189,7 @@ def smart_swap_test():
 
     with open('./english_bigrams.txt', 'r') as file:
         content = file.readlines()
-        splitted = array([line.replace("\n", "").split(" ") for line in content])
+        splitted = np.array([line.replace("\n", "").split(" ") for line in content])
         splitted[:, 1] = normalize([splitted[:, 1]])
         d = {k: float(v) for k, v in splitted}
 
@@ -173,6 +201,7 @@ def smart_swap_test():
 
 
 if __name__ == '__main__':
+
     # swap_rows_test()
     # crack_test()
 
@@ -188,7 +217,8 @@ if __name__ == '__main__':
     # inv_key = invert_key(key, alphabet_len)
     # decrypted = encrypt(text, inv_key, alphabet, freqs)
 
-    crack_test()
+    guess_me_keys_test()
+    # crack_test()
     # determinant_test()
 
     # smart_swap_test()
