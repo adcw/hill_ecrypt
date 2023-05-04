@@ -9,12 +9,25 @@ from sklearn.preprocessing import normalize
 import threading as thr
 from tqdm import tqdm
 
+import sys, os
+
+
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
+
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
+    blockPrint()
 
     def test(i):
-        matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5)
+        matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5, no_progres_bar=True)
         table.append([matrix, value, i])
         pass
 
@@ -26,12 +39,13 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
         threads[-1].start()
     for t in threads:
         t.join()
+    enablePrint()
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
 
 
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
-                         freqs: list[float] | None = None, buffer_len: int = 5):
+                         freqs: list[float] | None = None, buffer_len: int = 5, no_progres_bar: bool = False):
     scorer = ns('./english_bigrams.txt')
 
     with open('./english_bigrams.txt', 'r') as file:
@@ -127,7 +141,7 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
 
         print(f"BEST SOLUTION: {encrypt(text, key_old, alphabet, freqs)}")
         print("IMPROVING...")
-        for _ in tqdm(range(6000)):
+        for _ in tqdm(range(6000), disable=no_progres_bar):
             key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
             decoded_new = encrypt(text, key_new, alphabet, freqs)
             value_new = scorer.score(decoded_new)

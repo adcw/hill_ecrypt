@@ -116,6 +116,7 @@ def guess_me_keys_test():
 
     encrypted = encrypt(text, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs)
+    print(table)
     pass
 
 
