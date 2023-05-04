@@ -86,7 +86,7 @@ def crack_test():
 
 
 def guess_me_keys_test():
-    key_l = 6
+    key_l = 10
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
@@ -117,6 +117,9 @@ def guess_me_keys_test():
     encrypted = encrypt(text, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs)
     print(table)
+    print(f'I guess key length is= {table[0][2]}')
+    print(f'True key length = {key_l}')
+
     pass
 
 
