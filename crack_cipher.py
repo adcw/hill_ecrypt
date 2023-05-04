@@ -13,7 +13,7 @@ import sys, os
 
 
 # Disable
-def blockPrint():
+def disablePrint():
     sys.stdout = open(os.devnull, 'w')
 
 
@@ -24,7 +24,7 @@ def enablePrint():
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
-    blockPrint()
+    disablePrint()
 
     def test(i):
         matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5, no_progres_bar=True)
