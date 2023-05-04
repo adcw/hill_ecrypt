@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from hill_encrypt import encrypt, decrypt, invert_key
 from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random, randomize_rows, smart_rand_rows
-from crack_cipher import shotgun_hillclimbing,guess_key_len, guess_key_len
+from crack_cipher import shotgun_hillclimbing, guess_key_len, guess_key_len
 from sklearn.preprocessing import normalize
 
 
@@ -84,6 +84,7 @@ def crack_test():
 
     pass
 
+
 def guess_me_keys_test():
     key_l = 6
     alphabet_len = len(alphabet)
@@ -116,6 +117,7 @@ def guess_me_keys_test():
     encrypted = encrypt(text, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs)
     pass
+
 
 def determinant_test():
     # Tworzenie macierzy
@@ -201,7 +203,6 @@ def smart_swap_test():
 
 
 if __name__ == '__main__':
-
     # swap_rows_test()
     # crack_test()
 

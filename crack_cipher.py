@@ -9,6 +9,7 @@ from sklearn.preprocessing import normalize
 import threading as thr
 from tqdm import tqdm
 
+
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
 
@@ -27,6 +28,7 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
         t.join()
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
+
 
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
                          freqs: list[float] | None = None, buffer_len: int = 5):
