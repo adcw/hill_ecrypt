@@ -45,7 +45,7 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
 
 
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
-                         freqs: list[float] | None = None, buffer_len: int = 5, no_progres_bar: bool = False):
+                         freqs: list[float] | None = None,start_key: np.matrix | None = None, buffer_len: int = 5, no_progres_bar: bool = False):
     scorer = ns('./english_bigrams.txt')
 
     with open('./english_bigrams.txt', 'r') as file:
@@ -55,7 +55,10 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
         bigram_data = {k: float(v) for k, v in splitted}
 
     alphabet_len = len(alphabet)
-    key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+    if start_key is not None:
+        key_old = start_key
+    else:
+        key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
     value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
 
     best_results = []
