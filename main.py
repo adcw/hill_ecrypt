@@ -336,6 +336,15 @@ def perfomence_test():
         itr += 1
     print(f'chunkify (is part of encrypt): {itr}')
 
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        # split text to chunks
+        encrypt_chunk(key, chunks[0])
+        itr += 1
+    print(f'encrypt_chunk(key, chunks[0]) (is part of encrypt): {itr}')
+
     encrypted_chunks = 0
     itr = 0
     t0 = time()
@@ -352,7 +361,7 @@ def perfomence_test():
         encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
         itr += 1
     print(f'"".join([alphabet[x] for x in encrypted_chunks]) (is part of encrypt): {itr}')
-
+    encrypted_text
 
 
 
