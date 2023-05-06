@@ -6,11 +6,21 @@ from hill_encrypt import encrypt, decrypt, invert_key
 from hill_key import random_key, randomize_key, swap_rows, add_rows_with_random, randomize_rows, smart_rand_rows
 from crack_cipher import shotgun_hillclimbing, guess_key_len, guess_key_len
 from sklearn.preprocessing import normalize
+from time import time
+import sys, os
+def disablePrint():
+    sys.stdout = open(os.devnull, 'w')
+
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 def preprocess_text(text: str, alphabet: str):
     text = text.upper()
     processed = [c for c in text if c in alphabet.upper()]
     return "".join(processed)
+
 
 def encrypt_test():
     text = 'Attach files by dragging & dropping, selecting or pasting them.'
@@ -90,7 +100,7 @@ def crack_test():
 
 
 def guess_me_keys_test():
-    key_l = 10
+    key_l = 4
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
@@ -210,6 +220,142 @@ def smart_swap_test():
     pass
 
 
+def perfomence_test():
+    # test data
+    t_limit: int = 1
+    key_len = 4
+    alphabet_len = len(alphabet)
+    char_to_int = {v: k for k, v in enumerate(alphabet)}
+    key = np.matrix([[12, 14, 6, 13], [13, 17, 2, 21], [23, 24, 9, 22], [10, 0, 3, 20]])
+    with open('./english_bigrams.txt', 'r') as file:
+        content = file.readlines()
+        splitted = np.array([line.replace("\n", "").split(" ") for line in content])
+        splitted[:, 1] = normalize([splitted[:, 1]])
+        bigram_data = {k: float(v) for k, v in splitted}
+    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
+           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
+           'much to be tall like its companions—the pines and firs which grew around it.' \
+           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
+           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
+           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
+           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
+           'which made it feel more unhappy than before. And yet all this while the tree' \
+           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
+           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
+           "wish I were as tall as the other trees, then I would spread out my branches on' \
+           'every side, and my top would over-look the wide world. I should have the birds' \
+           'building their nests on my boughs, and when the wind blew, I should bow with' \
+           '    stately dignity like my tall companions." The tree was so discontented, that it" \
+            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
+           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
+           'glittering on the ground, a hare would come springing along, and jump right over' \
+           'the little tree; and then how mortified it would feel!'
+
+    letter_data = pd.read_csv("./english_letters.csv")
+    freqs = letter_data['frequency'].tolist()
+
+    # le test
+    print(f"Number of operation per second with key_l = {key_len}:")
+    processed = 0
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        processed = preprocess_text(text, alphabet)
+        itr += 1
+    print(f'preprocess_text: {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        encrypted = encrypt(processed, key, alphabet, freqs)
+        itr += 1
+    print(f'encrypt: {itr}')
+
+    from utils import mod_inverse_matrix
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        mod_inverse_matrix(key, 26)
+        itr += 1
+    print(f'mod_inverse_matrix: {itr}')
+
+    itr = 0
+    disablePrint()
+    t0 = time()
+    while time() - t0 < t_limit:
+        random_key(key_len, alphabet_len)
+        itr += 1
+    enablePrint()
+    print(f'random_key: {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        randomize_key(key, 0.2, alphabet_len)
+        itr += 1
+    print(f'randomize_key 20%: {itr}')
+
+    from hill_key import is_valid_key
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        is_valid_key(key, alphabet_len)
+        itr += 1
+    print(f'is_valid_key: {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        randomize_rows(key, 0.1, 0.5, alphabet_len)
+        itr += 1
+    print(f'randomize_rows perc_rows 0.1, perc_elems 0.5: {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        add_rows_with_random(key, alphabet_len)
+        itr += 1
+    print(f'add_rows_with_random: {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        smart_rand_rows(key, processed, alphabet, bigram_data, freqs)
+        itr += 1
+    print(f'smart_rand_rows: {itr}')
+
+    from hill_encrypt import chunkify, encrypt_chunk
+    text_numbers = [char_to_int.get(x) for x in processed]
+    itr = 0
+    chunks = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+
+        # split text to chunks
+        chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=alphabet_len)
+        itr += 1
+    print(f'chunkify (is part of encrypt): {itr}')
+
+    encrypted_chunks = 0
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        # split text to chunks
+        encrypted_chunks = np.array([encrypt_chunk(key, c) for c in chunks]).flatten()
+        itr += 1
+    print(f'np.array([encrypt_chunk(key, c) for c in chunks]).flatten() (is part of encrypt): {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        # split text to chunks
+        encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
+        itr += 1
+    print(f'"".join([alphabet[x] for x in encrypted_chunks]) (is part of encrypt): {itr}')
+
+
+
+
 if __name__ == '__main__':
     # swap_rows_test()
     # crack_test()
@@ -226,10 +372,10 @@ if __name__ == '__main__':
     # inv_key = invert_key(key, alphabet_len)
     # decrypted = encrypt(text, inv_key, alphabet, freqs)
 
-    guess_me_keys_test()
+    # guess_me_keys_test()
     # crack_test()
     # determinant_test()
-
+    perfomence_test()
     # smart_swap_test()
 
     # key = random_key(5, 26)
