@@ -8,6 +8,8 @@ from crack_cipher import shotgun_hillclimbing, guess_key_len, guess_key_len
 from sklearn.preprocessing import normalize
 from time import time
 import sys, os
+
+
 def disablePrint():
     sys.stdout = open(os.devnull, 'w')
 
@@ -15,6 +17,7 @@ def disablePrint():
 # Restore
 def enablePrint():
     sys.stdout = sys.__stdout__
+
 
 def preprocess_text(text: str, alphabet: str):
     text = text.upper()
@@ -333,12 +336,10 @@ def perfomence_test():
     chunks = 0
     t0 = time()
     while time() - t0 < t_limit:
-
         # split text to chunks
         chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=alphabet_len)
         itr += 1
     print(f'chunkify (is part of encrypt): {itr}')
-
 
     itr = 0
     t0 = time()
@@ -346,9 +347,9 @@ def perfomence_test():
         # split text to chunks
         encrypt_chunk(key, chunks[0])
         itr += 1
-    print(f'encrypt_chunk(key, chunks[0]) (is part of encrypt): {itr}')
+    print(f'encrypt_chunk(key, chunks[0]): {itr}')
 
-    from numpy import matmul,matrix
+    from numpy import matmul, matrix
     encrypted_chunks = []
     itr = 0
     t0 = time()
@@ -381,10 +382,8 @@ def perfomence_test():
         # split text to chunks
         encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
         itr += 1
-    print(f' encrypted_text = "".join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat): {itr}')
-    # encrypted_chunks = [(key @ c) % alphabet_len for c in chunks]
-    # encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
-
+    print(
+        f' encrypted_text = "".join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat) (is part of encrypt): {itr}')
 
 
 if __name__ == '__main__':
