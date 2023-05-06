@@ -226,7 +226,9 @@ def perfomence_test():
     key_len = 4
     alphabet_len = len(alphabet)
     char_to_int = {v: k for k, v in enumerate(alphabet)}
+    int_to_char = {k: v for k, v in enumerate(alphabet)}
     key = np.matrix([[12, 14, 6, 13], [13, 17, 2, 21], [23, 24, 9, 22], [10, 0, 3, 20]])
+    key = random_key(key_len, alphabet_len)
     with open('./english_bigrams.txt', 'r') as file:
         content = file.readlines()
         splitted = np.array([line.replace("\n", "").split(" ") for line in content])
@@ -250,12 +252,12 @@ def perfomence_test():
            'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
            'glittering on the ground, a hare would come springing along, and jump right over' \
            'the little tree; and then how mortified it would feel!'
-
+    processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
 
     # le test
-    print(f"Number of operation per second with key_l = {key_len}:")
+    print(f"Number of operation per second with key_l = {key_len} and text_len = {len(processed)}:")
     processed = 0
     itr = 0
     t0 = time()
@@ -317,6 +319,7 @@ def perfomence_test():
         itr += 1
     print(f'add_rows_with_random: {itr}')
 
+    # broken for now
     itr = 0
     t0 = time()
     while time() - t0 < t_limit:
@@ -345,23 +348,42 @@ def perfomence_test():
         itr += 1
     print(f'encrypt_chunk(key, chunks[0]) (is part of encrypt): {itr}')
 
-    encrypted_chunks = 0
+    from numpy import matmul,matrix
+    encrypted_chunks = []
     itr = 0
     t0 = time()
     while time() - t0 < t_limit:
         # split text to chunks
-        encrypted_chunks = np.array([encrypt_chunk(key, c) for c in chunks]).flatten()
+        encrypted_chunks = [np.dot(key, c) % len(alphabet) for c in chunks]
         itr += 1
-    print(f'np.array([encrypt_chunk(key, c) for c in chunks]).flatten() (is part of encrypt): {itr}')
+    print(f'[np.dot(key, c) % len(alphabet) for c in chunks] (is part of encrypt): {itr}')
+
+    encrypted_chunks = []
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        # split text to chunks
+        encrypted_chunks = [(key @ c) % alphabet_len for c in chunks]
+        itr += 1
+    print(f'[(key @ c) % alphabet_len for c in chunks]: {itr}')
 
     itr = 0
     t0 = time()
     while time() - t0 < t_limit:
         # split text to chunks
-        encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
+        encrypted_text = ''.join(alphabet[int(x)] for chunk in encrypted_chunks for x in np.ravel(chunk))
         itr += 1
-    print(f'"".join([alphabet[x] for x in encrypted_chunks]) (is part of encrypt): {itr}')
-    encrypted_text
+    print(f'"".join(alphabet[int(x)] for chunk in encrypted_chunks for x in np.ravel(chunk)): {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        # split text to chunks
+        encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
+        itr += 1
+    print(f' encrypted_text = "".join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat): {itr}')
+    # encrypted_chunks = [(key @ c) % alphabet_len for c in chunks]
+    # encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
 
 
 
@@ -369,17 +391,17 @@ if __name__ == '__main__':
     # swap_rows_test()
     # crack_test()
 
-    # key_l = 3
-    # alphabet_len = len(alphabet)
-    # text = 'Attach files by dragging & dropping, selecting or pasting them.'
-    #
-    # letter_data = pd.read_csv("./english_letters.csv")
-    # freqs = letter_data['frequency'].tolist()
-    #
-    # key = random_key(key_l, alphabet_len)
-    # encrypted = encrypt(text, key, alphabet, freqs)
-    # inv_key = invert_key(key, alphabet_len)
-    # decrypted = encrypt(text, inv_key, alphabet, freqs)
+    key_l = 3
+    alphabet_len = len(alphabet)
+    text = 'Attach files by dragging & dropping, selecting or pasting them.'
+    processed = preprocess_text(text, alphabet)
+    letter_data = pd.read_csv("./english_letters.csv")
+    freqs = letter_data['frequency'].tolist()
+
+    key = random_key(key_l, alphabet_len)
+    encrypted = encrypt(processed, key, alphabet, freqs)
+    inv_key = invert_key(key, alphabet_len)
+    decrypted = encrypt(encrypted, inv_key, alphabet, freqs)
 
     # guess_me_keys_test()
     # crack_test()
@@ -389,5 +411,5 @@ if __name__ == '__main__':
 
     # key = random_key(5, 26)
     # changed = add_rows_with_random(key, alphabet_len=26)
-
+    #  Optimizations
     pass

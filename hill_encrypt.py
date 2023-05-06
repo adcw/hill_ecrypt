@@ -1,5 +1,6 @@
 import random
 from numpy import matrix, reshape, linalg, matmul, array, ceil
+import numpy as np
 
 from utils import are_coprime
 
@@ -9,6 +10,7 @@ int_to_char = dict()
 char_to_int = dict()
 glob_alphabet = []
 
+
 def invert_key(matr: matrix, alphabet_len: int):
     """
     Calculate the given key inversion
@@ -17,8 +19,6 @@ def invert_key(matr: matrix, alphabet_len: int):
     :return: the key inversion
     """
     return utils.mod_inverse_matrix(matr, alphabet_len)
-
-
 
 
 def chunkify(numbers: list[int], chunk_size: int, freqs: list[float] | None = None, alphabet_len: int | None = None) -> \
@@ -101,23 +101,40 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     global glob_alphabet, int_to_char, char_to_int
     if alphabet != glob_alphabet:
         glob_alphabet = alphabet
-        int_to_char = {k:v for k,v in enumerate(alphabet)}
-        char_to_int = {v:k for k,v in enumerate(alphabet)}
-
-    # preprocess text
-
+        int_to_char = {k: v for k, v in enumerate(alphabet)}
+        char_to_int = {v: k for k, v in enumerate(alphabet)}
 
     # convert text to list of letter indexes
+    alphabet_len = len(alphabet)
     text_numbers = [char_to_int.get(x) for x in text]
 
     # split text to chunks
-    chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=len(alphabet))
+    chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=alphabet_len)
 
+    # v1
     # encrypt each chunk and join into single string
-    encrypted_chunks = array([encrypt_chunk(key, c) for c in chunks]).flatten()
+    # encrypted_chunks = []
+    # for c in chunks:
+    #     matr = matmul(key, c)
+    #     encrypted_chunks += matrix(matr % 26).tolist()[0]
+    #
+    # # convert letter indexes to a string
+    # encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
 
-    # convert letter indexes to a string
-    encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
+    # v2
+    # Encrypt each chunk using matrix multiplication
+    # encrypted_chunks = [np.dot(key, c) % alphabet_len for c in chunks]
+    #
+    # # Convert encrypted chunks to a string
+    # encrypted_text = ''.join(alphabet[int(x)] for chunk in encrypted_chunks for x in np.ravel(chunk))
+
+    # v3
+    # encrypted_chunks = [(key @ c) % alphabet_len for c in chunks]
+    # encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
+
+    # v4
+    encrypted_chunks = [np.dot(key, c) % alphabet_len for c in chunks]
+    encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
 
     return encrypted_text
 
