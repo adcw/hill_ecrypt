@@ -1,10 +1,10 @@
 import random
-from numpy import matrix, reshape, ceil, array
+
+from numpy import matrix, reshape, ceil
 from numpy.linalg import linalg
 
-import utils
+from hill_encrypt import encrypt
 from utils import are_coprime
-from hill_encrypt import encrypt, invert_key
 
 
 def random_key(key_len: int, alphabet_len: int):

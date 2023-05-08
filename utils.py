@@ -1,5 +1,10 @@
-from numpy import linalg, matrix, floor, ceil, round
+import os
+import sys
+import time
 from math import gcd
+from typing import Callable
+
+from numpy import linalg, matrix, round
 
 
 # def gcd(a, b):
@@ -9,6 +14,15 @@ from math import gcd
 #     while b:
 #         a, b = b, a % b
 #     return a
+
+
+def disable_print():
+    sys.stdout = open(os.devnull, 'w')
+
+
+# Restore
+def enable_print():
+    sys.stdout = sys.__stdout__
 
 
 def are_coprime(a, b):
@@ -34,3 +48,19 @@ def mod_inverse_matrix(m: matrix, modulo: int) -> matrix | None:
     m_inv_modulo = (m_inv * det * pow(int(det), -1, modulo)) % modulo
     m_int = round(m_inv_modulo).astype(int)
     return m_int
+
+
+def preprocess_text(text: str, alphabet: str):
+    text = text.upper()
+    processed = [c for c in text if c in alphabet.upper()]
+    return "".join(processed)
+
+
+def quality(callback: Callable, t_: int = 1):
+    t0 = time.time()
+    n_iters = 0
+    while time.time() - t0 < t_:
+        callback()
+        n_iters += 1
+
+    return n_iters

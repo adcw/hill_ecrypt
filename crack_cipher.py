@@ -1,33 +1,24 @@
-import numpy as np
-
-from ngram import Ngram_score as ns
-from hill_key import random_key, randomize_key, randomize_rows, add_rows_with_random, smart_rand_rows
-from hill_encrypt import encrypt, invert_key
-from time import time
 import random
-from sklearn.preprocessing import normalize
 import threading as thr
+from time import time
+
+import numpy as np
+from sklearn.preprocessing import normalize
 from tqdm import tqdm
 
-import sys, os
-
-
-# Disable
-def disablePrint():
-    sys.stdout = open(os.devnull, 'w')
-
-
-# Restore
-def enablePrint():
-    sys.stdout = sys.__stdout__
+from hill_encrypt import encrypt, invert_key
+from hill_key import random_key, randomize_rows, add_rows_with_random, smart_rand_rows
+from ngram import Ngram_score as ns
+from utils import disable_print, enable_print
 
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
-    disablePrint()
+    disable_print()
 
     def test(i):
-        matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5, no_progres_bar=True)
+        matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5,
+                                             no_progres_bar=True)
         table.append([matrix, value, i])
         pass
 
@@ -39,13 +30,14 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
         threads[-1].start()
     for t in threads:
         t.join()
-    enablePrint()
+    enable_print()
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
 
 
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
-                         freqs: list[float] | None = None,start_key: np.matrix | None = None, buffer_len: int = 5, no_progres_bar: bool = False):
+                         freqs: list[float] | None = None, start_key: np.matrix | None = None, buffer_len: int = 5,
+                         no_progres_bar: bool = False):
     scorer = ns('./english_bigrams.txt')
 
     with open('./english_bigrams.txt', 'r') as file:
