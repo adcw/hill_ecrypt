@@ -7,7 +7,7 @@ from sklearn.preprocessing import normalize
 
 from hill_encrypt import encrypt
 from hill_key import random_key, randomize_key, add_rows_with_random, randomize_rows, smart_rand_rows, is_valid_key, \
-    swap_rows
+    swap_rows, slide_key
 from utils import disable_print, enable_print, quality, preprocess_text
 
 
@@ -186,6 +186,7 @@ def change_key_performance():
     randomize_key_t = quality(lambda: randomize_key(key, 0.5, alphabet_len))
     swap_rows_t = quality(lambda: swap_rows(key))
     add_rows_with_random_t = quality(lambda: add_rows_with_random(key, alphabet_len))
+    slide_key_t = quality(lambda: slide_key(key, alphabet_len))
     # smart_rand_rows_t = quality(lambda: smart_rand_rows(key, text, alphabet, bigram_data, freqs))
 
     enable_print()
@@ -196,3 +197,4 @@ def change_key_performance():
     print(f"randomize key: {randomize_key_t}")
     print(f"swap rows: {swap_rows_t}")
     print(f"add_rows_with_random_t: {add_rows_with_random_t}")
+    print(f"slide_key_t: {slide_key_t}")

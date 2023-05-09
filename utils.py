@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import time
 from math import gcd
@@ -64,3 +65,17 @@ def quality(callback: Callable, t_: int = 1):
         n_iters += 1
 
     return n_iters
+
+
+class PrerandomInts:
+    def __init__(self, alphabet_len: int, l: int | None = 20):
+        self.values = [random.randint(0, alphabet_len - 1) for _ in range(l)]
+        self.alphabet_len = alphabet_len
+        self.i = 0
+
+    def random(self):
+        val = self.values[self.i]
+        self.i += 1
+        self.i %= self.alphabet_len
+
+        return val

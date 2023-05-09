@@ -1,7 +1,8 @@
 import random
-
+from numpy import matrix, reshape, linalg, matmul, array, ceil
 import numpy as np
-from numpy import matrix, matmul, ceil
+
+from utils import are_coprime
 
 import utils
 

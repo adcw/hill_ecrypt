@@ -2,10 +2,10 @@ from string import ascii_uppercase as alphabet
 
 import pandas as pd
 
-from crack_cipher import shotgun_hillclimbing, guess_key_len
+from crack_cipher import shotgun_hillclimbing, guess_key_len, annealing
 from hill_encrypt import encrypt, decrypt
-from hill_key import random_key
-from tests import change_key_performance
+from hill_key import random_key, slide_key
+from tests import change_key_performance, perfomence_test
 from utils import preprocess_text
 
 
@@ -20,19 +20,19 @@ def crack_test():
            'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
            'children would bring a large basket of raspberries or strawberries, wreathed on a' \
            'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
-        # 'which made it feel more unhappy than before. And yet all this while the tree' \
-    # 'grew a notch or joint taller every year; for by the number of joints in the stem of' \
-    # 'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
-    # "wish I were as tall as the other trees, then I would spread out my branches on' \
-    # 'every side, and my top would over-look the wide world. I should have the birds' \
-    # 'building their nests on my boughs, and when the wind blew, I should bow with' \
-    # '    stately dignity like my tall companions." The tree was so discontented, that it" \
-    #  "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
-    # 'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
-    # 'glittering on the ground, a hare would come springing along, and jump right over' \
-    # 'the little tree; and then how mortified it would feel!'
+           'which made it feel more unhappy than before. And yet all this while the tree' \
+           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
+           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
+           "wish I were as tall as the other trees, then I would spread out my branches on' \
+           'every side, and my top would over-look the wide world. I should have the birds' \
+           'building their nests on my boughs, and when the wind blew, I should bow with' \
+           '    stately dignity like my tall companions." The tree was so discontented, that it" \
+            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
+           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
+           'glittering on the ground, a hare would come springing along, and jump right over' \
+           'the little tree; and then how mortified it would feel!'
 
-    text = text * 4
+    # text = text * 4
     processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
@@ -42,7 +42,7 @@ def crack_test():
 
     encrypted = encrypt(processed, key, alphabet, freqs)
 
-    cracked_key, old_value = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
@@ -101,6 +101,13 @@ if __name__ == '__main__':
     # changed = add_rows_with_random(key, alphabet_len=26)
     #  Optimizations
 
-    change_key_performance()
+    # change_key_performance()
+
+    crack_test()
+
+    # key = random_key(5, 16)
+    # slid = slide_key(key, 26)
+    # print(key)
+    # print(slid)
 
     pass

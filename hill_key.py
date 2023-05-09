@@ -1,10 +1,11 @@
 import random
 
 from numpy import matrix, reshape, ceil
+import numpy as np
 from numpy.linalg import linalg
 
 from hill_encrypt import encrypt
-from utils import are_coprime
+from utils import are_coprime, PrerandomInts
 
 
 def random_key(key_len: int, alphabet_len: int):
@@ -58,17 +59,18 @@ def is_valid_key(key: matrix, alphabet_len: int):
 
 def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int,
                    r_indexes: list[int] | None = None):
-    def randomize():
-        key_len = key.shape[0]
-        n_rows_to_change = int(ceil(key_len * perc_rows))
-        indexes = [x for x in range(key_len)]
-        chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
+    temp = key.copy()
+    key_len = key.shape[0]
+    n_rows_to_change = int(ceil(key_len * perc_rows))
+    n_elems_to_change = int(ceil(key_len * perc_elems))
+    indexes = [x for x in range(key_len)]
 
-        changed = key.copy()
+    def randomize():
+        chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
 
         for row_index in chosen_rows:
             row = key[row_index].copy().tolist()[0]
-            n_elems_to_change = int(ceil(key_len * perc_elems))
+
             chosen_elems = random.sample(indexes, n_elems_to_change)
 
             for elem_index in chosen_elems:
@@ -80,6 +82,7 @@ def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_le
 
     # repeat until a valid key is generated
     while True:
+        changed = temp
         randomized_key = randomize()
         if is_valid_key(randomized_key, alphabet_len):
             return randomized_key
@@ -113,9 +116,13 @@ def randomize_key(key: matrix, percentage: float, alphabet_len: int) -> matrix:
         # chose random indexes from index list
         indexes_to_change = random.sample(indexes, k=to_change)
 
+        # chose random value to add
+        val = random.randint(1, alphabet_len - 1)
+
         # iterate over indexes and change the list accordingly
         for i in indexes_to_change:
-            m_list[i] = (m_list[i] + random.randint(1, alphabet_len - 1)) % alphabet_len
+            # m_list[i] = (m_list[i] + random.randint(1, alphabet_len - 1)) % alphabet_len
+            m_list[i] = (m_list[i] + val) % alphabet_len
 
         # return matrix with list's elements
         return matrix(reshape(m_list, (len(key), len(key))))
@@ -136,9 +143,10 @@ def swap_rows(key: matrix) -> matrix:
     :param key: the key
     :return: the key with swapped rows
     """
+    copied = key.copy()
 
     # the length of a key
-    key_len = key.shape[0]
+    key_len = copied.shape[0]
 
     # the list of row indexes
     indexes = [x for x in range(key_len)]
@@ -147,13 +155,37 @@ def swap_rows(key: matrix) -> matrix:
     iloc1, iloc2 = random.sample(indexes, k=2)
 
     # swap rows of giver indexes
-    temp = key[iloc1].copy()
-    key[iloc1] = key[iloc2]
-    key[iloc2] = temp
+    temp = copied[iloc1].copy()
+    copied[iloc1] = copied[iloc2]
+    copied[iloc2] = temp
 
     # return swapped key, we don't have to check if the key is still valid,
     # because swapping two rows of a square matrix doesn't change it's determinant.
-    return key
+    return copied
+
+
+def slide_key(key, alphabet_len: int) -> matrix:
+    temp = key.copy()
+
+    def slide(k):
+        l = key.shape[0]
+        loc = random.randint(0, l - 1)
+
+        transposed = random.random() < 0.5
+        if transposed:
+            k = k.T
+
+        row = k[loc].tolist()[0]
+        slid = [row[(i + 1) % l] for i in range(l)]
+        k[loc] = slid
+
+        return k.T if transposed else k
+
+    while True:
+        new_key = temp
+        result = slide(new_key)
+        if is_valid_key(result, alphabet_len):
+            return result
 
 
 def add_rows_with_random(key: matrix, alphabet_len: int) -> matrix:
