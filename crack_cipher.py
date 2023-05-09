@@ -1,5 +1,7 @@
 import random
 import threading as thr
+from multiprocessing import Pool
+from mpire import WorkerPool
 from time import time
 
 from math import exp
@@ -40,6 +42,15 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
 def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 60 * 5, j_max: int = 2000,
                          freqs: list[float] | None = None, start_key: np.matrix | None = None, buffer_len: int = 5,
                          no_progres_bar: bool = False):
+    # print(f"text: {text}")
+    # print(f"len{key_len}")
+    # print(f"alpa {alphabet}")
+    # print(f"time {t_limit}")
+    # print(f"j {j_max}")
+    # print(f"f {freqs}")
+    # print(f"start {start_key}")
+    # print(f"buffer {buffer_len}")
+    # print(f"no {no_progres_bar}")
     scorer = ns('./english_bigrams.txt')
 
     with open('./english_bigrams.txt', 'r') as file:
@@ -77,7 +88,6 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
             key_new = swap_rows(key_old)
         else:
             key_new = slide_key(key_old, alphabet_len)
-
 
         # r = random.random()
         # if perc < 0.9:
@@ -216,3 +226,58 @@ def annealing(cypher: str, key_len: int, alphabet: str, freqs: list[float] | Non
         t += dT
 
     return key_old
+
+
+def unwraper(i,c):
+    matrix, value = shotgun_hillclimbing(i[0], i[1], i[2], i[3], freqs=i[5], buffer_len=5,
+                                                                                  no_progres_bar=True)
+
+    print(f"c: {c}")
+    return matrix, value
+
+
+# (text, key_len, alphabet, t_limit, j_max, freqs, start_key, buffer_len, no_progres_bar: bool ):
+def testing(text: str, alphabet: str, key_len: int, test_time: int = 60 * 3, freqs: list[float] | None = None):
+    args = [text, key_len, alphabet, test_time, 2000, freqs, random_key(key_len, len(alphabet)), 5]
+    it_args = [True, True, True, True, True, True, True]
+    # print(args)
+    with WorkerPool(n_jobs=6, shared_objects=args, keep_alive=False) as pool:
+        table = pool.map(unwraper, iterable_of_args=it_args)
+
+        # async_results = [pool.apply(shotgun_hillclimbing, args) for i in range(6)]
+        # pool.stop_and_join()
+
+    table.sort(key=lambda row: (row[1]), reverse=True)
+    print(table)
+    return table
+
+#
+    # # ProcessPoolExecutor
+    # with ProcessPoolExecutor(max_workers=5) as pool:
+    #     results = list(pool.map(time_consuming_function, data))
+    #
+    # # Joblib
+    # results = Parallel(n_jobs=5)(delayed(time_consuming_function)(x) for x in data)
+    #
+    # # Dask
+    # client = Client(n_workers=5)
+    # results = client.gather([client.submit(time_consuming_function, x) for x in data])
+    # client.close()
+
+    # disable_print()
+
+    # def test(i):
+    #     matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5,
+    #                                          no_progres_bar=True)
+    #     table.append([matrix, value, i])
+    #     pass
+    #
+    # threads = []
+    # for i in range(2, 11):
+    #     threads.append(
+    #         thr.Thread(target=test, args=[i])
+    #     )
+    #     threads[-1].start()
+    # for t in threads:
+    #     t.join()
+    # enable_print()
