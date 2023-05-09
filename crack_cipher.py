@@ -140,20 +140,6 @@ def shotgun_hillclimbing(text: str, key_len: int, alphabet: str, t_limit: int = 
         best_results.sort(reverse=True, key=lambda x_: x_[0])
         value_old, key_old = best_results[0]
 
-        # print(f"BEST SOLUTION: {encrypt(text, key_old, alphabet, freqs)}")
-        # print("IMPROVING...")
-        # for _ in tqdm(range(6000), disable=no_progres_bar):
-        #     key_new = smart_rand_rows(key_old, text, alphabet, bigram_data, freqs)
-        #     decoded_new = encrypt(text, key_new, alphabet, freqs)
-        #     value_new = scorer.score(decoded_new)
-        #
-        #     if value_new > value_old:
-        #         print(f"decoded: {decoded_new[:25]}, value: {value_new / wordlen}, perc = {perc}, key = {key_new}")
-        #         key_old = key_new.copy()
-        #         value_old = value_new
-        #
-        # best_results[0] = value_old, key_old
-
         print(f'{buffer_len} best results:')
         for x in best_results[:buffer_len]:
             print(f"{x[0] / wordlen} {x[1]}, {encrypt(text, x[1], alphabet, freqs)[:20]}")

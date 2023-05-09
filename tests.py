@@ -5,10 +5,15 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
 
-from hill_encrypt import encrypt
+from hill_encrypt import encrypt, fast_encrypt
 from hill_key import random_key, randomize_key, add_rows_with_random, randomize_rows, smart_rand_rows, is_valid_key, \
     swap_rows, slide_key
 from utils import disable_print, enable_print, quality, preprocess_text
+from crack_cipher import shotgun_hillclimbing
+
+from ngram import NgramNumbers, Ngram_score
+
+from tqdm import tqdm
 
 
 def perfomence_test():
@@ -63,6 +68,13 @@ def perfomence_test():
         encrypted = encrypt(processed, key, alphabet, freqs)
         itr += 1
     print(f'encrypt: {itr}')
+
+    itr = 0
+    t0 = time()
+    while time() - t0 < t_limit:
+        encrypted = fast_encrypt(processed, key, alphabet, freqs)
+        itr += 1
+    print(f'fast encrypt: {itr}')
 
     from utils import mod_inverse_matrix
     itr = 0
@@ -198,3 +210,83 @@ def change_key_performance():
     print(f"swap rows: {swap_rows_t}")
     print(f"add_rows_with_random_t: {add_rows_with_random_t}")
     print(f"slide_key_t: {slide_key_t}")
+
+
+def test_shotgun(alphabet_: str, key_len: int = 2, n_tests: int = 5):
+    alphabet_len = len(alphabet_)
+
+    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
+           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
+           'much to be tall like its companions—the pines and firs which grew around it.' \
+           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
+           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
+           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
+           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
+           'which made it feel more unhappy than before. And yet all this while the tree' \
+           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
+           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
+           "wish I were as tall as the other trees, then I would spread out my branches on' \
+           'every side, and my top would over-look the wide world. I should have the birds' \
+           'building their nests on my boughs, and when the wind blew, I should bow with' \
+           '    stately dignity like my tall companions." The tree was so discontented, that it" \
+            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
+           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
+           'glittering on the ground, a hare would come springing along, and jump right over' \
+           'the little tree; and then how mortified it would feel!'
+
+    processed = preprocess_text(text, alphabet_)
+    letter_data = pd.read_csv("./english_letters.csv")
+    freqs = letter_data['frequency'].tolist()
+
+    real_keys = []
+    encryptions = []
+
+    for _ in range(n_tests):
+        key = random_key(key_len, alphabet_len)
+        encrypted = encrypt(processed, key, alphabet_, freqs)
+        real_keys.append(key)
+        encryptions.append(encrypted)
+
+    guessed_keys = []
+    fitnesses = []
+
+    t0 = time()
+    for key, encrypted in tqdm(zip(real_keys, encryptions), total=n_tests):
+        disable_print()
+        guessed_key, fitness = shotgun_hillclimbing(encrypted, key_len, alphabet_, freqs=freqs)
+        enable_print()
+        guessed_keys.append(guessed_key)
+        fitnesses.append(fitness)
+    t = time() - t0
+
+    avg_fitness = np.average(fitnesses)
+
+    n_guessed = 0
+    for guessed, real in zip(guessed_keys, real_keys):
+        if np.array_equal(guessed, real):
+            n_guessed += 1
+
+    effectiveness = n_guessed / n_tests
+
+    print(f"avg time: {t/n_tests:.2f} secs, avg_fitness: {avg_fitness/len(text):.2f}, effectiveness: {effectiveness}")
+
+
+def test_ngram_numbers():
+    scorer = NgramNumbers('./english_bigrams.txt', alphabet)
+    sc2 = Ngram_score('./english_bigrams.txt')
+
+    word = 'UNAFLIANLWFNALNWFAFNLAWKMF' * 1000
+    word_num = [alphabet.find(x) for x in word]
+
+    print(f"ngrams on text: {sc2.score(word)}")
+    print(f"ngrams on numbers: {scorer.score(word_num)}")
+
+    t0 = time()
+    for _ in range(100):
+        sc2.score(word)
+    print(f"ngrams on text time: {time() - t0}")
+
+    t0 = time()
+    for _ in range(100):
+        scorer.score(word_num)
+    print(f"ngrams on numbers time: {time() - t0}")

@@ -5,12 +5,12 @@ import pandas as pd
 from crack_cipher import shotgun_hillclimbing, guess_key_len, annealing
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key, slide_key
-from tests import change_key_performance, perfomence_test
+from tests import change_key_performance, perfomence_test, test_shotgun, test_ngram_numbers
 from utils import preprocess_text
 
 
 def crack_test():
-    key_l = 2
+    key_l = 3
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
@@ -32,7 +32,7 @@ def crack_test():
            'glittering on the ground, a hare would come springing along, and jump right over' \
            'the little tree; and then how mortified it would feel!'
 
-    # text = text * 4
+    text = text * 4
     processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
@@ -42,7 +42,7 @@ def crack_test():
 
     encrypted = encrypt(processed, key, alphabet, freqs)
 
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs)
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 15)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
@@ -103,11 +103,15 @@ if __name__ == '__main__':
 
     # change_key_performance()
 
-    crack_test()
+    # crack_test()
+
+    # test_shotgun(alphabet)
 
     # key = random_key(5, 16)
     # slid = slide_key(key, 26)
     # print(key)
     # print(slid)
+
+    test_ngram_numbers()
 
     pass

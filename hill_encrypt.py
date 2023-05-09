@@ -9,6 +9,7 @@ import utils
 int_to_char = dict()
 char_to_int = dict()
 glob_alphabet = []
+translation_table = None
 
 
 def invert_key(matr: matrix, alphabet_len: int):
@@ -137,6 +138,35 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
 
     return encrypted_text
+
+
+def fast_encrypt(text: str, key: matrix, alphabet: str, freqs: list[float]) -> str:
+    key_len = len(key)
+
+    global glob_alphabet, int_to_char, char_to_int
+    if alphabet != glob_alphabet:
+        glob_alphabet = alphabet
+        int_to_char = {k: v for k, v in enumerate(alphabet)}
+        char_to_int = {v: k for k, v in enumerate(alphabet)}
+
+    text_numbers = [char_to_int.get(x) for x in text]
+
+    n_chunks = int(ceil(len(text_numbers) / key_len))
+    encrypted = ""
+    letter_codes = np.arange(len(alphabet))
+
+    for i in range(n_chunks):
+        chunk = text_numbers[i * key_len:(i + 1) * key_len]
+        to_draw = key_len - len(chunk)
+
+        if to_draw != 0:
+            drawn = random.choices(letter_codes, freqs, k=to_draw)
+            chunk.extend(drawn)
+
+        encrypted_chunk = encrypt_chunk(key, chunk)
+        encrypted += "".join(int_to_char.get(num) for num in encrypted_chunk)
+
+    return encrypted
 
 
 def encrypt_chunk(key: matrix, chunk: list[int]) -> list[int]:
