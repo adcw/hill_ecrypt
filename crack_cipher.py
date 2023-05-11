@@ -46,6 +46,7 @@ def upgrade_key_unwraper(i, c):
     value = upgrade_key(c, *i)
     return value
 
+
 def upgrade_key(
         key: np.matrix,
         cypher: str,
@@ -132,18 +133,18 @@ def shotgun_hillclimbing(text: str,
     a = -0.99 / (target_score - bad_score)
     it_args = [key_old] * (key_len * 10)
     args = [text, alphabet, scorer, a, 100, freqs, bad_score, target_score]
-    with WorkerPool(n_jobs=10, shared_objects=args, keep_alive=True) as pool:
+    with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True) as pool:
         while time() - t0 < t_limit:
             if key_len > 2:
-                    table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
+                table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
 
-                    table.sort(key=lambda row: (row[1]), reverse=True)
+                table.sort(key=lambda row: (row[1]), reverse=True)
 
-                    if table[0][2]:
-                        return invert_key(table[0][0], alphabet_len), table[0][1]
+                if table[0][2]:
+                    return invert_key(table[0][0], alphabet_len), table[0][1]
 
-                    it_args = [row[0] for row in table[:int(ceil(len(table)/4))]]*4
-                    print("ITERACJA Wątkowa")
+                it_args = [row[0] for row in table[:int(ceil(len(table) / 4))]] * 4
+                print(f"Process Iteration of size: {len(it_args)}")
             else:
                 key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
                                                         iters=j_max,
