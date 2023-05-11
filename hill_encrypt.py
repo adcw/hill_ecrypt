@@ -22,6 +22,12 @@ def invert_key(matr: matrix, alphabet_len: int):
     return utils.mod_inverse_matrix(matr, alphabet_len)
 
 
+def chunkify_text(text: str, alphabet: str, freqs: list[float], chunk_size: int):
+    prepr = utils.preprocess_text(text, alphabet)
+    text_as_list = utils.str2ints(prepr, alphabet)
+    return chunkify(text_as_list, chunk_size, freqs, len(alphabet))
+
+
 def chunkify(numbers: list[int], chunk_size: int, freqs: list[float] | None = None, alphabet_len: int | None = None) -> \
         list[list[int]]:
     """
@@ -73,30 +79,6 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     :param alphabet: the alphabet
     :param freqs: optional; frequencies of each letter in language. If not provided, chunkify function will select random letters
     to fill remainders.
-
-    how to do:
-        n is len of a side of a matrix (height essentially)
-        split text to chunks of size n
-        convert them to number (can be done before split)
-        multiply matrix key with chunk
-        where chunk is (  int  )
-                       (  int  )
-                       (  int  )
-        modulo int's in result
-        convert back to letters, append them to encrypted text
-
-    handle a remainder:
-        if there is any remainder left after the split,
-        fill if with random letters until it creates a valid chunk.
-        Ideally the letters should be chosen according
-        to the language's real letter distribution
-
-        for example consider the key of lenght equal to 4 and word:
-        STRA WBER Y
-        'Y' is a remainder. We should add more letters so it satisfies the key's length:
-        for example:
-        STRA WBER YADZ
-        the next steps are analogous as described above
     :return:
     """
     global glob_alphabet, int_to_char, char_to_int
@@ -140,33 +122,37 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     return encrypted_text
 
 
-def fast_encrypt(text: str, key: matrix, alphabet: str, freqs: list[float]) -> str:
-    key_len = len(key)
+def fast_encrypt(chunks: list[list[int]], key: matrix, alphabet_len: int):
+    return [(np.dot(key, chunk) % alphabet_len).tolist()[0] for chunk in chunks]
 
-    global glob_alphabet, int_to_char, char_to_int
-    if alphabet != glob_alphabet:
-        glob_alphabet = alphabet
-        int_to_char = {k: v for k, v in enumerate(alphabet)}
-        char_to_int = {v: k for k, v in enumerate(alphabet)}
 
-    text_numbers = [char_to_int.get(x) for x in text]
-
-    n_chunks = int(ceil(len(text_numbers) / key_len))
-    encrypted = ""
-    letter_codes = np.arange(len(alphabet))
-
-    for i in range(n_chunks):
-        chunk = text_numbers[i * key_len:(i + 1) * key_len]
-        to_draw = key_len - len(chunk)
-
-        if to_draw != 0:
-            drawn = random.choices(letter_codes, freqs, k=to_draw)
-            chunk.extend(drawn)
-
-        encrypted_chunk = encrypt_chunk(key, chunk)
-        encrypted += "".join(int_to_char.get(num) for num in encrypted_chunk)
-
-    return encrypted
+# def fast_encrypt(text: str, key: matrix, alphabet: str, freqs: list[float]) -> str:
+#     key_len = len(key)
+#
+#     global glob_alphabet, int_to_char, char_to_int
+#     if alphabet != glob_alphabet:
+#         glob_alphabet = alphabet
+#         int_to_char = {k: v for k, v in enumerate(alphabet)}
+#         char_to_int = {v: k for k, v in enumerate(alphabet)}
+#
+#     text_numbers = [char_to_int.get(x) for x in text]
+#
+#     n_chunks = int(ceil(len(text_numbers) / key_len))
+#     encrypted = ""
+#     letter_codes = np.arange(len(alphabet))
+#
+#     for i in range(n_chunks):
+#         chunk = text_numbers[i * key_len:(i + 1) * key_len]
+#         to_draw = key_len - len(chunk)
+#
+#         if to_draw != 0:
+#             drawn = random.choices(letter_codes, freqs, k=to_draw)
+#             chunk.extend(drawn)
+#
+#         encrypted_chunk = encrypt_chunk(key, chunk)
+#         encrypted += "".join(int_to_char.get(num) for num in encrypted_chunk)
+#
+#     return encrypted
 
 
 def encrypt_chunk(key: matrix, chunk: list[int]) -> list[int]:

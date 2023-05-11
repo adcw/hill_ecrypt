@@ -5,7 +5,7 @@ import numpy as np
 from numpy.linalg import linalg
 
 from hill_encrypt import encrypt
-from utils import are_coprime, PrerandomInts
+from utils import are_coprime
 
 
 def random_key(key_len: int, alphabet_len: int):
@@ -57,6 +57,22 @@ def is_valid_key(key: matrix, alphabet_len: int):
     return det != 0 and are_coprime(det, alphabet_len)
 
 
+def small_change(key: matrix, alphabet_len: int, perc_elem: float = 0.5):
+    key_len = key.shape[0]
+    key_changed = key.copy()
+    row_to_change = np.random.randint(0, key_len)
+    row = key_changed[row_to_change, :]
+    elems_to_change = np.random.choice(np.arange(0, key_len), int(np.round(key_len * perc_elem)), replace=False)
+
+    def change():
+        row[:, elems_to_change] = (row[:, elems_to_change] + np.random.randint(0, alphabet_len - 1)) % 26
+
+    while True:
+        change()
+        if is_valid_key(key_changed, alphabet_len):
+            return key_changed
+
+
 def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int,
                    r_indexes: list[int] | None = None):
     temp = key.copy()
@@ -64,14 +80,12 @@ def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_le
     n_rows_to_change = int(ceil(key_len * perc_rows))
     n_elems_to_change = int(ceil(key_len * perc_elems))
     indexes = [x for x in range(key_len)]
+    chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
+    chosen_elems = random.sample(indexes, n_elems_to_change)
 
     def randomize():
-        chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
-
         for row_index in chosen_rows:
             row = key[row_index].copy().tolist()[0]
-
-            chosen_elems = random.sample(indexes, n_elems_to_change)
 
             for elem_index in chosen_elems:
                 row[elem_index] = (row[elem_index] + random.randint(0, alphabet_len - 1)) % alphabet_len
@@ -164,22 +178,21 @@ def swap_rows(key: matrix) -> matrix:
     return copied
 
 
-def slide_key(key, alphabet_len: int) -> matrix:
+def slide_key(key, alphabet_len: int, horizontal: bool = False) -> matrix:
     temp = key.copy()
 
     def slide(k):
         l = key.shape[0]
         loc = random.randint(0, l - 1)
 
-        transposed = random.random() < 0.5
-        if transposed:
+        if not horizontal:
             k = k.T
 
         row = k[loc].tolist()[0]
         slid = [row[(i + 1) % l] for i in range(l)]
         k[loc] = slid
 
-        return k.T if transposed else k
+        return k.T if not horizontal else k
 
     while True:
         new_key = temp

@@ -24,10 +24,10 @@ class Ngram_score(object):
         score = 0
         ngrams = self.ngrams.__getitem__
         for i in range(len(text) - self.L + 1):
-            if text[i:i + self.L] in self.ngrams:
-                score += ngrams(text[i:i + self.L])
-            else:
-                score += self.floor
+            # if text[i:i + self.L] in self.ngrams:
+            score += ngrams(text[i:i + self.L])
+        # else:
+        #     score += self.floor
         return score
 
 
@@ -67,9 +67,22 @@ class NgramNumbers:
         ngrams = self.ngrams.__getitem__
         for i in range(len(text) - self.ngram_len + 1):
             k = tuple(text[i: i + self.ngram_len])
-            if k in self.ngrams:
-                score += ngrams(k)
-            else:
-                score += self.floor
+            score += ngrams(k)
 
         return score
+
+    def chunklist_score(self, chunk_list: list[list[int]]):
+        total = 0
+        last_letter = None
+        ngrams = self.ngrams.__getitem__
+
+        for chunk in chunk_list:
+            if last_letter is not None:
+                total += ngrams((last_letter, chunk[0]))
+
+            total += self.score(chunk)
+            last_letter = chunk[-1]
+
+        return total
+
+        # return self.score(np.ravel(chunk_list).tolist())

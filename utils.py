@@ -58,24 +58,26 @@ def preprocess_text(text: str, alphabet: str):
 
 
 def quality(callback: Callable, t_: int = 1):
+    disable_print()
     t0 = time.time()
     n_iters = 0
     while time.time() - t0 < t_:
         callback()
         n_iters += 1
+    enable_print()
 
     return n_iters
 
 
-class PrerandomInts:
-    def __init__(self, alphabet_len: int, l: int | None = 20):
-        self.values = [random.randint(0, alphabet_len - 1) for _ in range(l)]
-        self.alphabet_len = alphabet_len
-        self.i = 0
+cached_str2ints = None
+cached_alphabet = None
 
-    def random(self):
-        val = self.values[self.i]
-        self.i += 1
-        self.i %= self.alphabet_len
 
-        return val
+def str2ints(text: str, alphabet: str):
+    global cached_str2ints, cached_alphabet
+
+    if alphabet != cached_alphabet:
+        cached_str2ints = {v: k for k, v in enumerate(alphabet)}
+        cached_alphabet = alphabet
+
+    return [cached_str2ints[char] for char in text]

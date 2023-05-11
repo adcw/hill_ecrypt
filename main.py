@@ -2,15 +2,15 @@ from string import ascii_uppercase as alphabet
 
 import pandas as pd
 
-from crack_cipher import shotgun_hillclimbing, guess_key_len, annealing
+from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
-from hill_key import random_key, slide_key
-from tests import change_key_performance, perfomence_test, test_shotgun, test_ngram_numbers
+from hill_key import random_key
+from tests import test_chunkify_text, test_shotgun, change_key_performance, perfomence_test, test_ngram_numbers
 from utils import preprocess_text
 
 
 def crack_test():
-    key_l = 3
+    key_l = 2
     alphabet_len = len(alphabet)
 
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
@@ -42,7 +42,8 @@ def crack_test():
 
     encrypted = encrypt(processed, key, alphabet, freqs)
 
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 15)
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 15, buffer_len=3,
+                                          j_max=4000)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
@@ -86,6 +87,7 @@ def guess_me_keys_test():
 
     pass
 
+
 def mrie_testing():
     key_l = 2
     alphabet_len = len(alphabet)
@@ -116,11 +118,12 @@ def mrie_testing():
     print(f"THE KEY: {key}")
     from crack_cipher import testing
     encrypted = encrypt(processed, key, alphabet, freqs)
-    table = testing(encrypted,alphabet,key_l,600, freqs=freqs)
+    table = testing(encrypted, alphabet, key_l, 600, freqs=freqs)
     print(table)
     print(f"THE KEY: {key}")
 
     pass
+
 
 if __name__ == '__main__':
     # swap_rows_test()
@@ -128,9 +131,11 @@ if __name__ == '__main__':
 
     # guess_me_keys_test()
     # crack_test()
-    # # determinant_test()
+    # determinant_test()
     # perfomence_test()
     # smart_swap_test()
+
+    # test_chunkify_text()
 
     # key = random_key(5, 26)
     # changed = add_rows_with_random(key, alphabet_len=26)
@@ -140,13 +145,13 @@ if __name__ == '__main__':
 
     # crack_test()
 
-    # test_shotgun(alphabet)
+    # test_shotgun(alphabet, n_tests=50)
     mrie_testing()
     # key = random_key(5, 16)
     # slid = slide_key(key, 26)
     # print(key)
     # print(slid)
 
-    test_ngram_numbers()
+    # test_ngram_numbers()
 
     pass
