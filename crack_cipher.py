@@ -15,6 +15,7 @@ from hill_key import random_key, randomize_rows, add_rows_with_random, smart_ran
     small_change
 from ngram import Ngram_score as ns
 from utils import disable_print, enable_print
+from math import ceil
 
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
@@ -40,6 +41,10 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
 
+
+def upgrade_key_unwraper(i, c):
+    value = upgrade_key(c, *i)
+    return value
 
 def upgrade_key(
         key: np.matrix,
@@ -107,15 +112,6 @@ def shotgun_hillclimbing(text: str,
                          buffer_len: int = 5,
                          target_score: int = -2.4,
                          no_progres_bar: bool = False):
-    # print(f"text: {text}")
-    # print(f"len{key_len}")
-    # print(f"alpa {alphabet}")
-    # print(f"time {t_limit}")
-    # print(f"j {j_max}")
-    # print(f"f {freqs}")
-    # print(f"start {start_key}")
-    # print(f"buffer {buffer_len}")
-    # print(f"no {no_progres_bar}")
     scorer = ns('./english_bigrams.txt')
 
     alphabet_len = len(alphabet)
@@ -134,94 +130,34 @@ def shotgun_hillclimbing(text: str,
     found = False
     bad_score = -3.6
     a = -0.99 / (target_score - bad_score)
+    it_args = [key_old] * (key_len * 10)
+    args = [text, alphabet, scorer, a, 100, freqs, bad_score, target_score]
+    with WorkerPool(n_jobs=10, shared_objects=args, keep_alive=True) as pool:
+        while time() - t0 < t_limit:
+            if key_len > 2:
+                    table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
 
-    while time() - t0 < t_limit:
+                    table.sort(key=lambda row: (row[1]), reverse=True)
 
-        key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
-                                                iters=j_max,
-                                                freqs=freqs,
-                                                bad_score=bad_score,
-                                                target_score=target_score)
+                    if table[0][2]:
+                        return invert_key(table[0][0], alphabet_len), table[0][1]
 
-        if found:
-            return invert_key(key_old, alphabet_len), value_old
-
-            # perc: float = (a * (value_old / word_len - bad_score) + 1)
-        # perc = max(min(perc, 1), 0.01)
-        #
-        # r = random.random()
-        #
-        # if r < 0.8:
-        #     key_new = randomize_rows(key_old, perc_rows=perc ** 1.2, perc_elems=perc ** 0.6,
-        #                              alphabet_len=alphabet_len)
-        # elif r < 0.9:
-        #     key_new = swap_rows(key_old)
-        # else:
-        #     key_new = slide_key(key_old, alphabet_len)
-        #
-        # if random.random() < 0.05:
-        #     key_new = slide_key(key_old, alphabet_len, horizontal=True)
-        #
-        # decoded_new = encrypt(text, key_new, alphabet, freqs)
-        # value_new = scorer.score(decoded_new)
-        # #
-        # if value_new > value_old:
-        #     print(
-        #         f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, perc = {perc}, key = {key_new}")
-        #
-        #     if value_new / word_len > target_score:
-        #         print(f'BEST: {decoded_new}, key = \n{key_new}')
-        #         key_old = key_new
-        #         value_old = value_new
-        #         found = True
-        #         break
-        #
-        #     key_old = key_new
-        #     value_old = value_new
-
-        if found:
-            break
-
-        # if j > j_max:
-        if len(best_results) <= buffer_len:
-            best_results.append((value_old, key_old))
-
-            key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-            value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-        else:
-            min_indx = 0
-            min_val = best_results[0][0]
-            for i in range(1, buffer_len):
-                v, _ = best_results[i]
-                if v < min_val:
-                    min_indx = i
-                    min_val = v
-
-            best_results[min_indx] = (value_old, key_old)
-
-            if random.random() < 0.95:
-                value_old, key_old = random.choice(best_results)
-                # key_old = key_old.copy()
+                    it_args = [row[0] for row in table[:int(ceil(len(table)/4))]]*4
+                    print("ITERACJA Wątkowa")
             else:
-                key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-                value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
+                key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
+                                                        iters=j_max,
+                                                        freqs=freqs,
+                                                        bad_score=bad_score,
+                                                        target_score=target_score)
+                if found:
+                    return invert_key(key_old, alphabet_len), value_old
 
-        itr += 1
-        # j += 1
-
-    if not found and len(best_results) > 0:
-        best_results.sort(reverse=True, key=lambda x_: x_[0])
-        value_old, key_old = best_results[0]
-
-        print(f'{buffer_len} best results:')
-        for x in best_results[:buffer_len]:
-            print(f"{x[0] / word_len} {x[1]}, {encrypt(text, x[1], alphabet, freqs)[:20]}")
-
-    t = time() - t0
-    print(f'elapsed time is {t:.2f} sec, used {itr} iterations. Speed: {itr / t:.2f} its/s, q = {value_old}')
-
-    real_key = invert_key(key_old, alphabet_len)
-    return real_key, value_old
+        if key_len > 2:
+            return invert_key(table[0][0], alphabet_len), table[0][1]
+        else:
+            real_key = invert_key(key_old, alphabet_len)
+            return real_key, value_old
 
 
 def fast_shotgun(chunkified_text: list[list[int]],
@@ -316,57 +252,76 @@ def fast_shotgun(chunkified_text: list[list[int]],
     real_key = invert_key(key_old, alphabet_len)
     return real_key, value_old
 
-
-def unwraper(i, c):
-    matrix, value = shotgun_hillclimbing(i[0], i[1], i[2], i[3], freqs=i[5], buffer_len=5,
-                                         no_progres_bar=True)
-
-    print(f"c: {c}")
-    return matrix, value
-
-
-# (text, key_len, alphabet, t_limit, j_max, freqs, start_key, buffer_len, no_progres_bar: bool ):
-def testing(text: str, alphabet: str, key_len: int, test_time: int = 60 * 3, freqs: list[float] | None = None):
-    args = [text, key_len, alphabet, test_time, 2000, freqs, random_key(key_len, len(alphabet)), 5]
-    it_args = [True, True, True, True, True, True, True]
-    # print(args)
-    with WorkerPool(n_jobs=6, shared_objects=args, keep_alive=False) as pool:
-        table = pool.map(unwraper, iterable_of_args=it_args)
-
-        # async_results = [pool.apply(shotgun_hillclimbing, args) for i in range(6)]
-        # pool.stop_and_join()
-
-    table.sort(key=lambda row: (row[1]), reverse=True)
-    print(table)
-    return table
-
-#
-# # ProcessPoolExecutor
-# with ProcessPoolExecutor(max_workers=5) as pool:
-#     results = list(pool.map(time_consuming_function, data))
-#
-# # Joblib
-# results = Parallel(n_jobs=5)(delayed(time_consuming_function)(x) for x in data)
-#
-# # Dask
-# client = Client(n_workers=5)
-# results = client.gather([client.submit(time_consuming_function, x) for x in data])
-# client.close()
-
-# disable_print()
-
-# def test(i):
-#     matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs, buffer_len=5,
-#                                          no_progres_bar=True)
-#     table.append([matrix, value, i])
-#     pass
-#
-# threads = []
-# for i in range(2, 11):
-#     threads.append(
-#         thr.Thread(target=test, args=[i])
-#     )
-#     threads[-1].start()
-# for t in threads:
-#     t.join()
-# enable_print()
+    # perc: float = (a * (value_old / word_len - bad_score) + 1)
+    #     # perc = max(min(perc, 1), 0.01)
+    #     #
+    #     # r = random.random()
+    #     #
+    #     # if r < 0.8:
+    #     #     key_new = randomize_rows(key_old, perc_rows=perc ** 1.2, perc_elems=perc ** 0.6,
+    #     #                              alphabet_len=alphabet_len)
+    #     # elif r < 0.9:
+    #     #     key_new = swap_rows(key_old)
+    #     # else:
+    #     #     key_new = slide_key(key_old, alphabet_len)
+    #     #
+    #     # if random.random() < 0.05:
+    #     #     key_new = slide_key(key_old, alphabet_len, horizontal=True)
+    #     #
+    #     # decoded_new = encrypt(text, key_new, alphabet, freqs)
+    #     # value_new = scorer.score(decoded_new)
+    #     # #
+    #     # if value_new > value_old:
+    #     #     print(
+    #     #         f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, perc = {perc}, key = {key_new}")
+    #     #
+    #     #     if value_new / word_len > target_score:
+    #     #         print(f'BEST: {decoded_new}, key = \n{key_new}')
+    #     #         key_old = key_new
+    #     #         value_old = value_new
+    #     #         found = True
+    #     #         break
+    #     #
+    #     #     key_old = key_new
+    #     #     value_old = value_new
+    #
+    #     if found:
+    #         break
+    #
+    #     # if j > j_max:
+    #     if len(best_results) <= buffer_len:
+    #         best_results.append((value_old, key_old))
+    #
+    #         key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+    #         value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
+    #     else:
+    #         min_indx = 0
+    #         min_val = best_results[0][0]
+    #         for i in range(1, buffer_len):
+    #             v, _ = best_results[i]
+    #             if v < min_val:
+    #                 min_indx = i
+    #                 min_val = v
+    #
+    #         best_results[min_indx] = (value_old, key_old)
+    #
+    #         if random.random() < 0.95:
+    #             value_old, key_old = random.choice(best_results)
+    #             # key_old = key_old.copy()
+    #         else:
+    #             key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+    #             value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
+    #
+    #     itr += 1
+    #     # j += 1
+    #
+    # if not found and len(best_results) > 0:
+    #     best_results.sort(reverse=True, key=lambda x_: x_[0])
+    #     value_old, key_old = best_results[0]
+    #
+    #     print(f'{buffer_len} best results:')
+    #     for x in best_results[:buffer_len]:
+    #         print(f"{x[0] / word_len} {x[1]}, {encrypt(text, x[1], alphabet, freqs)[:20]}")
+    #
+    # t = time() - t0
+    # print(f'elapsed time is {t:.2f} sec, used {itr} iterations. Speed: {itr / t:.2f} its/s, q = {value_old}')
