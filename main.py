@@ -8,31 +8,16 @@ from hill_key import random_key
 from tests import test_chunkify_text, test_shotgun, change_key_performance, perfomence_test, test_ngram_numbers
 from utils import preprocess_text
 
+import winsound
+
 
 def crack_test():
-    key_l = 3
+    key_l = 4
     alphabet_len = len(alphabet)
 
-    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
-           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
-           'much to be tall like its companions—the pines and firs which grew around it.' \
-           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
-           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
-           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
-           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
-           'which made it feel more unhappy than before. And yet all this while the tree' \
-           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
-           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
-           "wish I were as tall as the other trees, then I would spread out my branches on' \
-           'every side, and my top would over-look the wide world. I should have the birds' \
-           'building their nests on my boughs, and when the wind blew, I should bow with' \
-           '    stately dignity like my tall companions." The tree was so discontented, that it" \
-            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
-           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
-           'glittering on the ground, a hare would come springing along, and jump right over' \
-           'the little tree; and then how mortified it would feel!'
+    with open("./text.txt", "r") as file:
+        text = file.read()
 
-    text = text * 4
     processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
@@ -42,8 +27,16 @@ def crack_test():
 
     encrypted = encrypt(processed, key, alphabet, freqs)
 
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 15, buffer_len=3,
-                                          j_max=4000)
+    """
+    Best bend values
+    key_len | row bend | elem bend
+    2       | 1.4      | 1
+    3       | 4        | 0.8
+    4       | 10       | 0.5
+    """
+
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 20,
+                                          search_deepness=1000, row_bend=10, elem_bend=0.5)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
@@ -90,7 +83,10 @@ def guess_me_keys_test():
 
 if __name__ == '__main__':
     # swap_rows_test()
-    crack_test()
+    # crack_test()
+
+
+
 
     # guess_me_keys_test()
     # crack_test()
@@ -106,7 +102,7 @@ if __name__ == '__main__':
 
     # change_key_performance()
 
-    # crack_test()
+    crack_test()
 
     # test_shotgun(alphabet, n_tests=50)
     # mrie_testing()

@@ -273,7 +273,7 @@ def test_shotgun(alphabet_: str, key_len: int = 2, n_tests: int = 5):
     for key, encrypted, chunkified in tqdm(zip(real_keys, encryptions, chunkified_texts), total=n_tests):
         disable_print()
         guessed_key, fitness = shotgun_hillclimbing(encrypted, key_len, alphabet_, freqs=freqs, buffer_len=3,
-                                                    j_max=4000, t_limit=60 * 5)
+                                                    search_deepness=4000, t_limit=60 * 5)
         # guessed_key, fitness = fast_shotgun(chunkified, key_len, len(alphabet_), scorer, buffer_len=3, j_max=2000)
         enable_print()
         guessed_keys.append(guessed_key)
