@@ -174,7 +174,7 @@ def shotgun_hillclimbing(text: str,
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
     if sound:
-        notifier = Notifier([-3])
+        notifier = Notifier([-3.2, -3, -2.6])
 
     with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
         while time() - t0 < t_limit:
