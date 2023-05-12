@@ -173,7 +173,8 @@ def shotgun_hillclimbing(text: str,
     args = [text, alphabet, scorer, a, search_deepness, row_bend, elem_bend, freqs, bad_score, target_score]
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
-    notifier = Notifier([-3.4, -3, -2.6])
+    if sound:
+        notifier = Notifier([-3])
 
     with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
         while time() - t0 < t_limit:
@@ -185,7 +186,8 @@ def shotgun_hillclimbing(text: str,
                 score = table[0][1] / word_len
 
                 # Update the notifier
-                notifier.update(score)
+                if sound:
+                    notifier.update(score)
 
                 if table[0][2]:
                     notifier.success()
@@ -193,7 +195,9 @@ def shotgun_hillclimbing(text: str,
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
                     return invert_key(table[0][0], alphabet_len), table[0][1]
 
-                it_args = [row[0] for row in table[:int(ceil(len(table) / 4))]] * 4
+                it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]] * 2
+                it_args.pop()
+                it_args.append(random_key(key_len,alphabet_len))
                 print(f"Process Iteration of size: {len(it_args)}")
 
             else:

@@ -32,11 +32,11 @@ def crack_test():
     key_len | row bend | elem bend
     2       | 1.4      | 1
     3       | 4        | 0.8
-    4       | 8        | 0.7
+    4       | 10       | 0.55
     """
 
     cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 20,
-                                          search_deepness=1000, row_bend=7, elem_bend=0.7)
+                                          search_deepness=1000, row_bend=10, elem_bend=0.55)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
