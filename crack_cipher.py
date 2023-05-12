@@ -111,22 +111,34 @@ def upgrade_key(
 
 
 class Notifier:
-    def __init__(self, thresholds: list[float], duration: int = 200, freq: int = 800):
+    def __init__(self, thresholds: list[float], duration: int = 200, freq_th: int = 600, freq_failure: int = 400,
+                 freq_success: int = 800):
         self.t_dict = {k: False for k in thresholds}
         self.duration = duration
-        self.freq = freq
+        self.freq_th = freq_th
+        self.freq_failure = freq_failure
+        self.freq_success = freq_success
 
     def update(self, score):
-        threshold_passed = None
-        for threshold in self.t_dict.keys():
-            if score > threshold:
-                threshold_passed = threshold
+        threshold_passing = None
+
+        for threshold, already_passed in self.t_dict.items():
+            if not already_passed and score > threshold:
+                threshold_passing = threshold
                 break
 
-        if not self.t_dict.get(threshold_passed, True):
-            for _ in range(10):
-                winsound.Beep(self.freq, self.duration)
-            self.t_dict[threshold_passed] = True
+        if threshold_passing is not None:
+            for _ in range(3):
+                winsound.Beep(self.freq_th, self.duration)
+            self.t_dict[threshold_passing] = True
+
+    def success(self):
+        for _ in range(10):
+            winsound.Beep(self.freq_success, self.duration)
+
+    def failure(self):
+        for _ in range(10):
+            winsound.Beep(self.freq_failure, self.duration)
 
 
 def shotgun_hillclimbing(text: str,
@@ -161,7 +173,7 @@ def shotgun_hillclimbing(text: str,
     args = [text, alphabet, scorer, a, search_deepness, row_bend, elem_bend, freqs, bad_score, target_score]
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
-    notifier = Notifier([-3])
+    notifier = Notifier([-3.4, -3, -2.6])
 
     with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
         while time() - t0 < t_limit:
@@ -176,6 +188,7 @@ def shotgun_hillclimbing(text: str,
                 notifier.update(score)
 
                 if table[0][2]:
+                    notifier.success()
                     t = time() - t0
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
                     return invert_key(table[0][0], alphabet_len), table[0][1]
@@ -193,12 +206,15 @@ def shotgun_hillclimbing(text: str,
                                                         target_score=target_score
                                                         )
                 if found:
+                    notifier.success()
                     t = time() - t0
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
                     return invert_key(key_old, alphabet_len), value_old
 
         t = time() - t0
         print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+
+        notifier.failure()
 
         if key_len > 2:
             return invert_key(table[0][0], alphabet_len), table[0][1]
