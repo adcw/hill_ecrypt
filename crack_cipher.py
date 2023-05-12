@@ -190,7 +190,8 @@ def shotgun_hillclimbing(text: str,
                     notifier.update(score)
 
                 if table[0][2]:
-                    notifier.success()
+                    if sound:
+                        notifier.success()
                     t = time() - t0
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
                     return invert_key(table[0][0], alphabet_len), table[0][1]
@@ -217,8 +218,8 @@ def shotgun_hillclimbing(text: str,
 
         t = time() - t0
         print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
-
-        notifier.failure()
+        if sound:
+            notifier.failure()
 
         if key_len > 2:
             return invert_key(table[0][0], alphabet_len), table[0][1]
