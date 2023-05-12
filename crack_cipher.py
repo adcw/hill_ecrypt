@@ -47,18 +47,6 @@ def upgrade_key_unwraper(i, c):
     return value
 
 
-"""
-   key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
-                                                        iters=search_deepness,
-                                                        row_bend=row_bend,
-                                                        elem_bend=elem_bend,
-                                                        freqs=freqs,
-                                                        bad_score=bad_score,
-                                                        target_score=target_score
-                                                        )
-"""
-
-
 def upgrade_key(
         key: np.matrix,
         cypher: str,
@@ -169,12 +157,13 @@ def shotgun_hillclimbing(text: str,
     bad_score = -3.6
     a = -0.99 / (target_score - bad_score)
     it_args = [key_old] * (key_len * 10)
+
     args = [text, alphabet, scorer, a, search_deepness, row_bend, elem_bend, freqs, bad_score, target_score]
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
     notifier = Notifier([-3])
 
-    with WorkerPool(n_jobs=10, shared_objects=args, keep_alive=True, daemon=True) as pool:
+    with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
         while time() - t0 < t_limit:
             if key_len > 2:
                 table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
@@ -192,7 +181,8 @@ def shotgun_hillclimbing(text: str,
                     return invert_key(table[0][0], alphabet_len), table[0][1]
 
                 it_args = [row[0] for row in table[:int(ceil(len(table) / 4))]] * 4
-                print("ITERACJA Wątkowa")
+                print(f"Process Iteration of size: {len(it_args)}")
+
             else:
                 key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
                                                         iters=search_deepness,
