@@ -12,7 +12,7 @@ import winsound
 
 
 def crack_test():
-    key_l = 2
+    key_l = 4
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -27,17 +27,18 @@ def crack_test():
 
     """
     Best bend values
+    Delete half check rest
     key_len | row bend | elem bend | times in s
-    2       | 1.4      | 1         | 
-    3       | 2        | 0.8       | 77.35,  97.7,  98.5,  152, 154
+    2       | 1.35     | 0.9       | 2.95, 5.40, 6.09
+    3       | 1.8      | 0.8       | 68.6, 68.6, 68.75, 96.25, 151, 151
     4       | 2        | 1.1       | 431,  550.30, 1201.46, 1220.55
     5       | 4        | 1.5
     """
-    # 3     | 1.8      | 0.8
-    # 68.6, 68.6, 68.75, 96.25, 151, 151
 
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 20,
-                                          search_deepness=1000, row_bend=1.35, elem_bend=0.9, sound=False)
+
+
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 30,
+                                          search_deepness=1000, row_bend=2, elem_bend=1.1, sound=False)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
