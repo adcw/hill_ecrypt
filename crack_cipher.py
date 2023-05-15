@@ -162,87 +162,103 @@ def shotgun_hillclimbing(text: str,
 
     alphabet_len = len(alphabet)
 
-    if start_key is not None:
-        key_old = start_key
-        it_args = [key_old] * (key_len * 10)
-    else:
-        key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
-    value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-
     t0, itr, j = time(), 0, 0
     word_len = len(text)
 
     bad_score = -3.6
     a = -0.99 / (target_score - bad_score)
 
-    # it_args = [key_old] * (key_len * 10)
-
-    args = [text, alphabet, scorer, a, row_bend, elem_bend, freqs, search_deepness, bad_score, target_score,
-            print_threshold]
-
     # Create notifier, give a list of thresholds after which the beeping occurs.
     notifier = Notifier([-3.2, -3, -2.6]) if sound else None
 
-    with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
+    if key_len == 2:
+        text = text[:120]
+        buffer = []
+        buffer_len = 4
+        buffer_weights = [buffer_len - i for i in range(buffer_len)]
+        for _ in range(buffer_len):
+            key = random_key(key_len, alphabet_len)
+            encr = encrypt(text, key, alphabet, freqs)
+            score = scorer.score(encr)
+            buffer.append((score, key))
+
         while time() - t0 < t_limit:
-            if key_len > 2:
+            q, to_change = random.choices(buffer, k=1)[0]
+
+            print(f"i choose {to_change}, q = {q / 120}")
+            key_old, value_old, found = upgrade_key(key=to_change, cypher=text, alphabet=alphabet, scorer=scorer,
+                                                    a=a,
+                                                    row_bend=row_bend,
+                                                    elem_bend=elem_bend,
+                                                    freqs=freqs,
+                                                    iters=search_deepness * 10,
+                                                    bad_score=bad_score,
+                                                    target_score=target_score,
+                                                    print_threshold=print_threshold
+                                                    )
+
+            buffer.sort(reverse=True, key=lambda x: x[0])
+
+            buffer.pop()
+            buffer.pop()
+            buffer.append((value_old, key_old))
+
+            rk = random_key(key_len, alphabet_len)
+            val = scorer.score(encrypt(text, rk, alphabet, freqs))
+
+            buffer.append((val, rk))
+
+            if found:
+                if notifier is not None:
+                    notifier.success()
+                t = time() - t0
+                print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+                return invert_key(key_old, alphabet_len), value_old
+
+    else:
+        args = [text, alphabet, scorer, a, row_bend, elem_bend, freqs, search_deepness, bad_score, target_score,
+                print_threshold]
+
+        if start_key is not None:
+            key_old = start_key
+            it_args = [key_old] * (key_len * 10)
+        else:
+            key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+            it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
+        value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
+
+        with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
+            while time() - t0 < t_limit:
                 table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
 
                 table.sort(key=lambda row: (row[1]), reverse=True)
 
-                score = table[0][1] / word_len
+                key_old = table[0][0]
+                value_old = table[0][1] / word_len
 
                 # Update the notifier
                 if notifier is not None:
-                    notifier.update(score)
+                    notifier.update(value_old)
 
                 if table[0][2]:
                     if sound:
                         notifier.success()
                     t = time() - t0
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
-                    return invert_key(table[0][0], alphabet_len), table[0][1]
+                    return invert_key(key_old, alphabet_len), value_old
 
                 it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]] * 2
                 it_args.pop()
                 it_args.append(random_key(key_len, alphabet_len))
                 print(f"Process Iteration of size: {len(it_args)}")
 
-            else:
-                key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
-                                                        row_bend=row_bend,
-                                                        elem_bend=elem_bend,
-                                                        freqs=freqs,
-                                                        iters=search_deepness,
-                                                        bad_score=bad_score,
-                                                        target_score=target_score,
-                                                        print_threshold=print_threshold
-                                                        )
-                if notifier is not None:
-                    notifier.success()
-                    t = time() - t0
-                    print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+    t = time() - t0
+    print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
 
-                    for elem in it_args:
-                        print(elem)
-                if found:
-                    return invert_key(key_old, alphabet_len), value_old
+    if notifier is not None:
+        notifier.failure()
 
-        t = time() - t0
-        print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
-
-        for elem in it_args:
-            print(elem)
-
-        if notifier is not None:
-            notifier.failure()
-
-        if key_len > 2:
-            return invert_key(table[0][0], alphabet_len), table[0][1]
-        else:
-            real_key = invert_key(key_old, alphabet_len)
-            return real_key, value_old
+    return invert_key(key_old, alphabet_len), value_old
 
 
 def fast_shotgun(chunkified_text: list[list[int]],
