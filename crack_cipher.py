@@ -226,7 +226,7 @@ def shotgun_hillclimbing(text: str,
 
                     for elem in it_args:
                         print(elem)
-
+                if found:
                     return invert_key(key_old, alphabet_len), value_old
 
         t = time() - t0

@@ -12,7 +12,7 @@ import winsound
 
 
 def crack_test():
-    key_l = 4
+    key_l = 2
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -21,23 +21,23 @@ def crack_test():
     processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
-
     key = random_key(key_l, alphabet_len)
     print(f"THE KEY: {key}")
-
     encrypted = encrypt(processed, key, alphabet, freqs)
 
     """
     Best bend values
-    key_len | row bend | elem bend
-    2       | 1.4      | 1
-    3       | 4        | 0.8
-    4       | 10       | 0.55
+    key_len | row bend | elem bend | times in s
+    2       | 1.4      | 1         | 
+    3       | 2        | 0.8       | 77.35,  97.7,  98.5,  152, 154
+    4       | 2        | 1.1       | 431,  550.30, 1201.46, 1220.55
+    5       | 4        | 1.5
     """
+    # 3     | 1.8      | 0.8
+    # 68.6, 68.6, 68.75, 96.25, 151, 151
 
     cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, freqs=freqs, t_limit=60 * 20,
-                                          # search_deepness=1000, row_bend=10, elem_bend=0.55)
-                                          search_deepness=1000, row_bend=2, elem_bend=1.1)
+                                          search_deepness=1000, row_bend=1.35, elem_bend=0.9, sound=False)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
@@ -85,9 +85,6 @@ def guess_me_keys_test():
 if __name__ == '__main__':
     # swap_rows_test()
     # crack_test()
-
-
-
 
     # guess_me_keys_test()
     # crack_test()
