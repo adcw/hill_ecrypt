@@ -53,14 +53,15 @@ def upgrade_key(
         alphabet: str,
         scorer: ngram.Ngram_score,
         a: float,
-        iters: 100,
+
         row_bend: float,
         elem_bend: float,
 
         freqs: list[float] | None,
+        iters: int = 100,
         bad_score: float = -4,
         target_score: float = -2.4,
-
+        print_threshold: float = -3.4
 ):
     alphabet_len = len(alphabet)
     word_len = len(cypher)
@@ -93,11 +94,13 @@ def upgrade_key(
         value_new = scorer.score(decoded_new)
 
         if value_new > value_old:
-            print(
-                f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, "
-                f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = {key_new}")
+            value_normalized = value_new / word_len
+            if value_normalized >= print_threshold:
+                print(
+                    f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, "
+                    f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = {key_new}")
 
-            if value_new / word_len > target_score:
+            if value_normalized > target_score:
                 print(f'BEST: {decoded_new}, key = \n{key_new}')
                 found = True
                 key_old = key_new
@@ -149,18 +152,22 @@ def shotgun_hillclimbing(text: str,
                          search_deepness: int = 1000,
                          freqs: list[float] | None = None,
                          start_key: np.matrix | None = None,
-                         target_score: int = -2.4,
+                         target_score: float = -2.4,
                          row_bend: float = 1,
                          elem_bend: float = 1,
-                         sound: bool = False
-                         ):
+                         sound: bool = False,
+                         print_threshold: float = -3.4
+                         ) -> tuple[np.matrix, float]:
     scorer = ns('./english_bigrams.txt')
 
     alphabet_len = len(alphabet)
+
     if start_key is not None:
         key_old = start_key
+        it_args = [key_old] * (key_len * 10)
     else:
         key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
     value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
 
     t0, itr, j = time(), 0, 0
@@ -168,13 +175,14 @@ def shotgun_hillclimbing(text: str,
 
     bad_score = -3.6
     a = -0.99 / (target_score - bad_score)
-    it_args = [key_old] * (key_len * 10)
 
-    args = [text, alphabet, scorer, a, search_deepness, row_bend, elem_bend, freqs, bad_score, target_score]
+    # it_args = [key_old] * (key_len * 10)
+
+    args = [text, alphabet, scorer, a, row_bend, elem_bend, freqs, search_deepness, bad_score, target_score,
+            print_threshold]
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
-    if sound:
-        notifier = Notifier([-3.2, -3, -2.6])
+    notifier = Notifier([-3.2, -3, -2.6]) if sound else None
 
     with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
         while time() - t0 < t_limit:
@@ -186,7 +194,7 @@ def shotgun_hillclimbing(text: str,
                 score = table[0][1] / word_len
 
                 # Update the notifier
-                if sound:
+                if notifier is not None:
                     notifier.update(score)
 
                 if table[0][2]:
@@ -198,27 +206,36 @@ def shotgun_hillclimbing(text: str,
 
                 it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]] * 2
                 it_args.pop()
-                it_args.append(random_key(key_len,alphabet_len))
+                it_args.append(random_key(key_len, alphabet_len))
                 print(f"Process Iteration of size: {len(it_args)}")
 
             else:
                 key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer, a=a,
-                                                        iters=search_deepness,
                                                         row_bend=row_bend,
                                                         elem_bend=elem_bend,
                                                         freqs=freqs,
+                                                        iters=search_deepness,
                                                         bad_score=bad_score,
-                                                        target_score=target_score
+                                                        target_score=target_score,
+                                                        print_threshold=print_threshold
                                                         )
-                if found:
+                if notifier is not None:
                     notifier.success()
                     t = time() - t0
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+
+                    for elem in it_args:
+                        print(elem)
+
                     return invert_key(key_old, alphabet_len), value_old
 
         t = time() - t0
         print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
-        if sound:
+
+        for elem in it_args:
+            print(elem)
+
+        if notifier is not None:
             notifier.failure()
 
         if key_len > 2:
