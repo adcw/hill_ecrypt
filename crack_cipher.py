@@ -173,47 +173,30 @@ def shotgun_hillclimbing(text: str,
 
     if key_len == 2:
         text = text[:120]
-        buffer = []
-        buffer_len = 4
-        buffer_weights = [buffer_len - i for i in range(buffer_len)]
-        for _ in range(buffer_len):
-            key = random_key(key_len, alphabet_len)
-            encr = encrypt(text, key, alphabet, freqs)
-            score = scorer.score(encr)
-            buffer.append((score, key))
+        key_old = random_key(key_len, word_len)
 
         while time() - t0 < t_limit:
-            q, to_change = random.choices(buffer, k=1)[0]
+            # q, to_change = random.choices(buffer, k=1)[0]
 
-            print(f"i choose {to_change}, q = {q / 120}")
-            key_old, value_old, found = upgrade_key(key=to_change, cypher=text, alphabet=alphabet, scorer=scorer,
+            # print(f"i choose {to_change}, q = {q / 120}")
+            key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer,
                                                     a=a,
                                                     row_bend=row_bend,
                                                     elem_bend=elem_bend,
                                                     freqs=freqs,
-                                                    iters=search_deepness * 10,
+                                                    iters=search_deepness * 20,
                                                     bad_score=bad_score,
                                                     target_score=target_score,
                                                     print_threshold=print_threshold
                                                     )
-
-            buffer.sort(reverse=True, key=lambda x: x[0])
-
-            buffer.pop()
-            buffer.pop()
-            buffer.append((value_old, key_old))
-
-            rk = random_key(key_len, alphabet_len)
-            val = scorer.score(encrypt(text, rk, alphabet, freqs))
-
-            buffer.append((val, rk))
-
             if found:
                 if notifier is not None:
                     notifier.success()
                 t = time() - t0
                 print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
                 return invert_key(key_old, alphabet_len), value_old
+            else:
+                key_old = random_key(key_len, alphabet_len)
 
     else:
         args = [text, alphabet, scorer, a, row_bend, elem_bend, freqs, search_deepness, bad_score, target_score,
