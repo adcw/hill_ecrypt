@@ -18,6 +18,8 @@ from utils import disable_print, enable_print
 from math import ceil
 import winsound
 
+from typing import Callable
+
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
@@ -53,18 +55,18 @@ def upgrade_key(
         alphabet: str,
         scorer: ngram.Ngram_score,
         a: float,
-
+        b: float,
         row_bend: float,
         elem_bend: float,
 
         freqs: list[float] | None,
         iters: int = 100,
-        bad_score: float = -4,
         target_score: float = -2.4,
         print_threshold: float = -3.4
 ):
     alphabet_len = len(alphabet)
     word_len = len(cypher)
+    number_of_upgrades = 0
 
     key_old = key.copy()
     found = False
@@ -72,8 +74,7 @@ def upgrade_key(
 
     for i in range(iters):
 
-        perc: float = (a * (value_old / word_len - bad_score) + 1)
-        perc = max(min(perc, 1), 0.01)
+        perc = min(max(a * (value_old / word_len) + b, 0.01), 1)
         perc_rows = perc ** row_bend
         perc_elems = perc ** elem_bend
 
@@ -81,6 +82,9 @@ def upgrade_key(
 
         if r < 0.8:
             key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
+                                     alphabet_len=alphabet_len)
+        elif r < 0.85:
+            key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=1,
                                      alphabet_len=alphabet_len)
         elif r < 0.9:
             key_new = swap_rows(key_old)
@@ -99,7 +103,7 @@ def upgrade_key(
                 print(
                     f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, "
                     f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = {key_new}")
-
+                number_of_upgrades += 1
             if value_normalized > target_score:
                 print(f'BEST: {decoded_new}, key = \n{key_new}')
                 found = True
@@ -110,7 +114,7 @@ def upgrade_key(
             key_old = key_new
             value_old = value_new
 
-    return key_old, value_old, found
+    return key_old, value_old, found, number_of_upgrades
 
 
 class Notifier:
@@ -144,29 +148,40 @@ class Notifier:
             winsound.Beep(self.freq_failure, self.duration)
 
 
+def linear(x1, y1, x2, y2):
+    a = (y2 - y1) / (x2 - x1)
+    b = y1 - a * x1
+    return a, b
+
+
+def perc_slope_function(bad_score: float, target_score: float) -> tuple[float, float]:
+    return linear(bad_score, 1, target_score, 0.01)
+
+
 def shotgun_hillclimbing(text: str,
                          key_len: int,
                          alphabet: str,
+                         ngram_file_path: str,
 
                          t_limit: int = 60 * 5,
                          search_deepness: int = 1000,
                          freqs: list[float] | None = None,
                          start_key: np.matrix | None = None,
                          target_score: float = -2.4,
+                         bad_score: float = -3.6,
                          row_bend: float = 1,
                          elem_bend: float = 1,
                          sound: bool = False,
                          print_threshold: float = -3.4
                          ) -> tuple[np.matrix, float]:
-    scorer = ns('./english_bigrams.txt')
+    scorer = ns(ngram_file_path)
 
     alphabet_len = len(alphabet)
 
     t0, itr, j = time(), 0, 0
     word_len = len(text)
 
-    bad_score = -3.6
-    a = -0.99 / (target_score - bad_score)
+    a, b = perc_slope_function(bad_score, target_score)
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
     notifier = Notifier([-3.2, -3, -2.6]) if sound else None
@@ -179,16 +194,16 @@ def shotgun_hillclimbing(text: str,
             # q, to_change = random.choices(buffer, k=1)[0]
 
             # print(f"i choose {to_change}, q = {q / 120}")
-            key_old, value_old, found = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer,
-                                                    a=a,
-                                                    row_bend=row_bend,
-                                                    elem_bend=elem_bend,
-                                                    freqs=freqs,
-                                                    iters=search_deepness * 20,
-                                                    bad_score=bad_score,
-                                                    target_score=target_score,
-                                                    print_threshold=print_threshold
-                                                    )
+            key_old, value_old, found, a = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer,
+                                                       a=a,
+                                                       b=b,
+                                                       row_bend=row_bend,
+                                                       elem_bend=elem_bend,
+                                                       freqs=freqs,
+                                                       iters=search_deepness,
+                                                       target_score=target_score,
+                                                       print_threshold=print_threshold
+                                                       )
             if found:
                 if notifier is not None:
                     notifier.success()
@@ -199,15 +214,33 @@ def shotgun_hillclimbing(text: str,
                 key_old = random_key(key_len, alphabet_len)
 
     else:
-        args = [text, alphabet, scorer, a, row_bend, elem_bend, freqs, search_deepness, bad_score, target_score,
+        """
+        
+        cypher: str,
+        alphabet: str,
+        scorer: ngram.Ngram_score,
+        a: float,
+        b: float,
+        row_bend: float,
+        elem_bend: float,
+
+        freqs: list[float] | None,
+        iters: int = 100,
+        target_score: float = -2.4,
+        print_threshold: float = -3.4
+        """
+
+        args = [text, alphabet, scorer, a, b, row_bend, elem_bend, freqs, search_deepness,
+                target_score,
                 print_threshold]
 
+        key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
+
         if start_key is not None:
-            key_old = start_key
-            it_args = [key_old] * (key_len * 10)
-        else:
-            key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-            it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
+            it_args.pop()
+            it_args.append(start_key)
+
         value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
 
         with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
@@ -229,10 +262,16 @@ def shotgun_hillclimbing(text: str,
                     t = time() - t0
                     print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
                     return invert_key(key_old, alphabet_len), value_old
-
-                it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]] * 2
-                it_args.pop()
-                it_args.append(random_key(key_len, alphabet_len))
+                total = sum([row[3] for row in table])
+                print(f"Number of upgrades: {total}")
+                if total < 5:
+                    it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]]
+                    for i in range(len(it_args)):
+                        it_args.append(random_key(key_len, alphabet_len))
+                else:
+                    it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]] * 2
+                    it_args.pop()
+                    it_args.append(random_key(key_len, alphabet_len))
                 print(f"Process Iteration of size: {len(it_args)}")
 
     t = time() - t0
@@ -242,170 +281,3 @@ def shotgun_hillclimbing(text: str,
         notifier.failure()
 
     return invert_key(key_old, alphabet_len), value_old
-
-
-def fast_shotgun(chunkified_text: list[list[int]],
-                 key_len: int,
-                 alphabet_len: int,
-                 scorer: ngram.NgramNumbers,
-                 t_limit: int = 60 * 5,
-                 j_max: int = 2000,
-                 start_key: np.matrix | None = None,
-                 buffer_len: int = 5,
-                 target_fitness: float = -2.4):
-    key_old = random_key(key_len, alphabet_len) if start_key is None else start_key
-    value_old = scorer.chunklist_score(fast_encrypt(chunkified_text, key_old, alphabet_len))
-
-    best_results = []
-    t0, itr, j = time(), 0, 0
-    chunkified_text_shape = np.shape(chunkified_text)
-    word_len = chunkified_text_shape[0] * chunkified_text_shape[1]
-    perc = 1
-
-    bad_fitness = -3.6
-    a = -0.99 / (target_fitness - bad_fitness)
-
-    while time() - t0 < t_limit:
-        # if perc <= 0.01:
-        #     perc = 0.01
-        # else:
-        #     perc = (1 - ((time() - t0) / t_limit)) ** 10
-        perc = np.clip((a * (value_old / word_len - bad_fitness) + 1) ** 0.3, 0.01, 1)  # if key_len != 2 else 1
-
-        r = random.random()
-
-        if r < 0.7:
-            key_new = randomize_rows(key_old, perc_rows=perc * 1, perc_elems=perc * 1, alphabet_len=alphabet_len)
-            # key_new = small_change(key_old, alphabet_len)
-        elif r < 0.8:
-            key_new = swap_rows(key_old)
-        else:
-            key_new = slide_key(key_old, alphabet_len)
-
-        if random.random() < 0.1:
-            key_new = slide_key(key_old, alphabet_len, horizontal=True)
-
-        value_new = scorer.chunklist_score(fast_encrypt(chunkified_text, key_new, alphabet_len))
-
-        if value_new > value_old:
-            print(f"perc: {perc}, value: {value_new / word_len}, key:")
-            print(key_new)
-
-            if value_new / word_len > target_fitness:
-                print("SOLUTION FOUND")
-                print(f'elapsed time is {time() - t0} sec, used {itr} iterations')
-                return invert_key(key_new, alphabet_len), value_new
-
-            # key_old, value_old = key_new.copy(), value_new
-            key_old = key_new
-            value_old = value_new
-            j = 0
-
-        if j > j_max:
-
-            if len(best_results) <= buffer_len:
-                best_results.append((value_old, key_old))
-
-                key_old = random_key(key_len, alphabet_len)
-                value_old = scorer.chunklist_score(fast_encrypt(chunkified_text, key_old, alphabet_len))
-            else:
-                # elements = [x[0] for x in best_results]
-                # percentile = np.percentile(elements, 75)
-
-                # if value_old > percentile:
-                best_results.append((value_old, key_old))
-                best_results.sort(reverse=True, key=lambda t: t[0])
-                best_results = best_results[:buffer_len]
-
-                if random.random() < 0.95:
-                    value_old, key_old = random.choice(best_results[:buffer_len])
-                else:
-                    key_old = random_key(key_len, alphabet_len)
-                    value_old = scorer.chunklist_score(fast_encrypt(chunkified_text, key_old, alphabet_len))
-
-        itr += 1
-        j += 1
-
-    if len(best_results) > 0:
-        best_results.sort(reverse=True, key=lambda x_: x_[0])
-        value_old, key_old = best_results[0]
-
-    t = time() - t0
-    print(f'elapsed time is {t:.2f} sec, used {itr} iterations. Speed: {itr / t:.2f} its/s')
-
-    real_key = invert_key(key_old, alphabet_len)
-    return real_key, value_old
-
-    # perc: float = (a * (value_old / word_len - bad_score) + 1)
-    #     # perc = max(min(perc, 1), 0.01)
-    #     #
-    #     # r = random.random()
-    #     #
-    #     # if r < 0.8:
-    #     #     key_new = randomize_rows(key_old, perc_rows=perc ** 1.2, perc_elems=perc ** 0.6,
-    #     #                              alphabet_len=alphabet_len)
-    #     # elif r < 0.9:
-    #     #     key_new = swap_rows(key_old)
-    #     # else:
-    #     #     key_new = slide_key(key_old, alphabet_len)
-    #     #
-    #     # if random.random() < 0.05:
-    #     #     key_new = slide_key(key_old, alphabet_len, horizontal=True)
-    #     #
-    #     # decoded_new = encrypt(text, key_new, alphabet, freqs)
-    #     # value_new = scorer.score(decoded_new)
-    #     # #
-    #     # if value_new > value_old:
-    #     #     print(
-    #     #         f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, perc = {perc}, key = {key_new}")
-    #     #
-    #     #     if value_new / word_len > target_score:
-    #     #         print(f'BEST: {decoded_new}, key = \n{key_new}')
-    #     #         key_old = key_new
-    #     #         value_old = value_new
-    #     #         found = True
-    #     #         break
-    #     #
-    #     #     key_old = key_new
-    #     #     value_old = value_new
-    #
-    #     if found:
-    #         break
-    #
-    #     # if j > j_max:
-    #     if len(best_results) <= buffer_len:
-    #         best_results.append((value_old, key_old))
-    #
-    #         key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-    #         value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-    #     else:
-    #         min_indx = 0
-    #         min_val = best_results[0][0]
-    #         for i in range(1, buffer_len):
-    #             v, _ = best_results[i]
-    #             if v < min_val:
-    #                 min_indx = i
-    #                 min_val = v
-    #
-    #         best_results[min_indx] = (value_old, key_old)
-    #
-    #         if random.random() < 0.95:
-    #             value_old, key_old = random.choice(best_results)
-    #             # key_old = key_old.copy()
-    #         else:
-    #             key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-    #             value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-    #
-    #     itr += 1
-    #     # j += 1
-    #
-    # if not found and len(best_results) > 0:
-    #     best_results.sort(reverse=True, key=lambda x_: x_[0])
-    #     value_old, key_old = best_results[0]
-    #
-    #     print(f'{buffer_len} best results:')
-    #     for x in best_results[:buffer_len]:
-    #         print(f"{x[0] / word_len} {x[1]}, {encrypt(text, x[1], alphabet, freqs)[:20]}")
-    #
-    # t = time() - t0
-    # print(f'elapsed time is {t:.2f} sec, used {itr} iterations. Speed: {itr / t:.2f} its/s, q = {value_old}')
