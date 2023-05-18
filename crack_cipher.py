@@ -58,6 +58,7 @@ def upgrade_key(
         b: float,
         row_bend: float,
         elem_bend: float,
+        bigram_data: dict,
 
         freqs: list[float] | None,
         iters: int = 100,
@@ -71,6 +72,11 @@ def upgrade_key(
     key_old = key.copy()
     found = False
     value_old = scorer.score(encrypt(cypher, key_old, alphabet, freqs))
+    init_smart = True
+
+    smarts = False
+    n_smarts = 0
+    max_smarts = 50
 
     for i in range(iters):
 
@@ -80,25 +86,64 @@ def upgrade_key(
 
         r = random.random()
 
-        if r < 0.8:
-            key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
-                                     alphabet_len=alphabet_len)
-        elif r < 0.85:
-            key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=1,
-                                     alphabet_len=alphabet_len)
-        elif r < 0.9:
-            key_new = swap_rows(key_old)
-        else:
-            key_new = slide_key(key_old, alphabet_len)
+        # if perc < 0.3:
+        #     if r < 0.8:
+        #         key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
+        #                                  alphabet_len=alphabet_len)
+        #     elif r < 0.9:
+        #         key_new = swap_rows(key_old)
+        #     else:
+        #         key_new = slide_key(key_old, alphabet_len)
+        # else:
+        #     if r < 0.6:
+        #         key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
+        #                                  alphabet_len=alphabet_len)
+        #     elif r < 0.65:
+        #         key_new = swap_rows(key_old)
+        #     elif r < 0.70:
+        #         key_new = slide_key(key_old, alphabet_len)
+        #     else:
+        #         key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
+        #                                      init=init_smart)
+        #         init_smart = False
 
-        if random.random() < 0.05:
-            key_new = slide_key(key_old, alphabet_len, horizontal=True)
+        if smarts and n_smarts < max_smarts:
+            key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs, init=init_smart)
+            init_smart = False
+            n_smarts += 1
+
+        if smarts and n_smarts == max_smarts:
+            # print(f"I WAS SMART MOTHERFUCKER: {encrypt(cypher,key_new,alphabet, freqs)}")
+            smarts = False
+            n_smarts = 0
+
+        if not smarts:
+            if r < 0.75:
+                key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
+                                         alphabet_len=alphabet_len)
+            elif r < 0.85:
+                if perc < 0.3:
+                    key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs, init=init_smart)
+                    smarts = True
+                    init_smart = False
+                else:
+                    key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=1,
+                                             alphabet_len=alphabet_len)
+            elif r < 0.9:
+                key_new = swap_rows(key_old)
+            else:
+                key_new = slide_key(key_old, alphabet_len)
+
+            if random.random() < 0.05:
+                key_new = slide_key(key_old, alphabet_len, horizontal=True)
 
         decoded_new = encrypt(cypher, key_new, alphabet, freqs)
         value_new = scorer.score(decoded_new)
 
         if value_new > value_old:
             value_normalized = value_new
+            init_smart = True
+
             if value_normalized >= print_threshold:
                 print(
                     f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new}, "
@@ -165,7 +210,9 @@ def shotgun_hillclimbing(text: str,
 
                          t_limit: int = 60 * 5,
                          search_deepness: int = 1000,
+
                          freqs: list[float] | None = None,
+
                          start_key: np.matrix | None = None,
                          target_score: float = -2.4,
                          bad_score: float = -3.6,
@@ -186,6 +233,12 @@ def shotgun_hillclimbing(text: str,
     print_threshold *= word_len
 
     a, b = perc_slope_function(bad_score, target_score)
+
+    with open(ngram_file_path, 'r') as file:
+        content = file.readlines()
+        splitted = np.array([line.replace("\n", "").split(" ") for line in content])
+        splitted[:, 1] = normalize([splitted[:, 1]])
+        bigram_data = {k: float(v) for k, v in splitted}
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
     notifier = Notifier([-3.2, -3, -2.6]) if sound else None
@@ -234,7 +287,7 @@ def shotgun_hillclimbing(text: str,
         print_threshold: float = -3.4
         """
 
-        args = [text, alphabet, scorer, a, b, row_bend, elem_bend, freqs, search_deepness,
+        args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
                 target_score,
                 print_threshold]
 
