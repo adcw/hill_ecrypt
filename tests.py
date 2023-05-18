@@ -9,11 +9,11 @@ from tqdm import tqdm
 
 import hill_encrypt
 import ngram
-from crack_cipher import shotgun_hillclimbing, fast_shotgun
+from crack_cipher import shotgun_hillclimbing
 from hill_encrypt import encrypt, fast_encrypt, chunkify, chunkify_text
 from hill_key import random_key, randomize_key, add_rows_with_random, randomize_rows, smart_rand_rows, is_valid_key, \
     swap_rows, slide_key, small_change
-from ngram import NgramNumbers, Ngram_score
+from ngram import Ngram_score
 from utils import disable_print, enable_print, quality, preprocess_text, str2ints
 
 
@@ -272,7 +272,7 @@ def test_shotgun(alphabet_: str, key_len: int = 2, n_tests: int = 5):
     t0 = time()
     for key, encrypted, chunkified in tqdm(zip(real_keys, encryptions, chunkified_texts), total=n_tests):
         disable_print()
-        guessed_key, fitness = shotgun_hillclimbing(encrypted, key_len, alphabet_, freqs=freqs, buffer_len=3,
+        guessed_key, fitness = shotgun_hillclimbing(encrypted, key_len, alphabet_, freqs=freqs,
                                                     search_deepness=4000, t_limit=60 * 5)
         # guessed_key, fitness = fast_shotgun(chunkified, key_len, len(alphabet_), scorer, buffer_len=3, j_max=2000)
         enable_print()
