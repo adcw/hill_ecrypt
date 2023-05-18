@@ -47,7 +47,7 @@ def mod_inverse_matrix(m: matrix, modulo: int) -> matrix | None:
 
     m_inv = linalg.inv(m)
     m_inv_modulo = (m_inv * det * pow(int(det), -1, modulo)) % modulo
-    m_int = round(m_inv_modulo).astype(int)
+    m_int = round(m_inv_modulo).astype(int) % modulo
     return m_int
 
 
