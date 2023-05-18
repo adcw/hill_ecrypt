@@ -221,28 +221,36 @@ def add_rows_with_random(key: matrix, alphabet_len: int) -> matrix:
     return new_key
 
 
-def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, freqs: list[float] | None = None):
-    key_len = key.shape[0]
-    decrypted_err = encrypt(cipher, key, alphabet, freqs)
+cached_to_change = None
+
+
+def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, freqs: list[float] | None = None,
+                    init: bool = False, perc: float = 1):
+    global cached_to_change
     alphabet_len = len(alphabet)
 
-    bigram_values = []
-    for i in range(len(decrypted_err) - 1):
-        chars = decrypted_err[i:i + 2]
-        bigram_values.append(bigram_data[chars])
+    if cached_to_change is None or init:
+        key_len = key.shape[0]
+        decrypted_err = encrypt(cipher, key, alphabet, freqs)
 
-    recalculated = [2 * bigram_values[0]]
-    for i in range(len(bigram_values) - 1):
-        x, y = bigram_values[i: i + 2]
-        recalculated.append(x + y)
+        bigram_values = []
+        for i in range(len(decrypted_err) - 1):
+            chars = decrypted_err[i:i + 2]
+            bigram_values.append(bigram_data[chars])
 
-    recalculated.append(2 * bigram_values[-1])
-    recalculated = reshape(recalculated, (int(len(recalculated) / key_len), key_len))
+        recalculated = [2 * bigram_values[0]]
+        for i in range(len(bigram_values) - 1):
+            x, y = bigram_values[i: i + 2]
+            recalculated.append(x + y)
 
-    summed = recalculated.sum(axis=0)
+        recalculated.append(2 * bigram_values[-1])
+        recalculated = reshape(recalculated, (int(len(recalculated) / key_len), key_len))
 
-    to_change = random.choices([x for x in range(key_len)], summed ** 5)
-    fixed = randomize_rows(key, r_indexes=to_change, alphabet_len=alphabet_len,
-                           perc_elems=0.5,
+        summed = recalculated.sum(axis=0)
+
+        cached_to_change = np.argmax([summed], axis=1).tolist()
+
+    fixed = randomize_rows(key, r_indexes=cached_to_change, alphabet_len=alphabet_len,
+                           perc_elems=perc,
                            perc_rows=0.01)
-    return fixed
+    return fixed, cached_to_change
