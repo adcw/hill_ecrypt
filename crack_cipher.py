@@ -122,7 +122,7 @@ def upgrade_key(
                 key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
                                          alphabet_len=alphabet_len)
             elif r < 0.85:
-                if perc < 0.3:
+                if perc < 0.35:
                     key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs, init=init_smart)
                     smarts = True
                     init_smart = False
@@ -207,6 +207,7 @@ def shotgun_hillclimbing(text: str,
                          key_len: int,
                          alphabet: str,
                          ngram_file_path: str,
+                         bigram_file_path: str,
 
                          t_limit: int = 60 * 5,
                          search_deepness: int = 1000,
@@ -234,7 +235,7 @@ def shotgun_hillclimbing(text: str,
 
     a, b = perc_slope_function(bad_score, target_score)
 
-    with open(ngram_file_path, 'r') as file:
+    with open(bigram_file_path, 'r') as file:
         content = file.readlines()
         splitted = np.array([line.replace("\n", "").split(" ") for line in content])
         splitted[:, 1] = normalize([splitted[:, 1]])
