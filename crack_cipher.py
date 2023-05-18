@@ -246,7 +246,7 @@ def shotgun_hillclimbing(text: str,
         with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
             while time() - t0 < t_limit:
                 table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
-
+                itr += 1
                 table.sort(key=lambda row: (row[1]), reverse=True)
 
                 key_old = table[0][0]
