@@ -7,6 +7,7 @@ from numpy.linalg import linalg
 from hill_encrypt import encrypt
 from utils import are_coprime
 
+from numba import jit
 
 def random_key(key_len: int, alphabet_len: int):
     """
@@ -75,7 +76,6 @@ def small_change(key: matrix, alphabet_len: int, perc_elem: float = 0.5):
 
 def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int,
                    r_indexes: list[int] | None = None):
-    temp = key.copy()
     key_len = key.shape[0]
     n_rows_to_change = int(ceil(key_len * perc_rows))
     n_elems_to_change = int(ceil(key_len * perc_elems))
@@ -83,21 +83,21 @@ def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_le
     chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
     chosen_elems = random.sample(indexes, n_elems_to_change)
 
-    def randomize():
+    def randomize(k):
         for row_index in chosen_rows:
             row = key[row_index].copy().tolist()[0]
 
             for elem_index in chosen_elems:
                 row[elem_index] = (row[elem_index] + random.randint(0, alphabet_len - 1)) % alphabet_len
 
-            changed[row_index] = row
+            k[row_index] = row
 
-        return changed
+        return k
 
     # repeat until a valid key is generated
     while True:
-        changed = temp
-        randomized_key = randomize()
+        temp = key.copy()
+        randomized_key = randomize(temp)
         if is_valid_key(randomized_key, alphabet_len):
             return randomized_key
 
