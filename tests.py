@@ -1,3 +1,4 @@
+import random
 from string import ascii_uppercase as alphabet
 from time import time
 
@@ -293,36 +294,24 @@ def test_shotgun(alphabet_: str, key_len: int = 2, n_tests: int = 5):
         f"avg time: {t / n_tests:.2f} secs, avg_fitness: {avg_fitness / len(text):.2f}, effectiveness: {effectiveness}")
 
 
-def test_ngram_numbers():
-    scorer = NgramNumbers('./english_bigrams.txt', alphabet)
-    sc2 = Ngram_score('./english_bigrams.txt')
+def test_inversion():
+    sum = 0
+    for _ in range(1000):
+        original = random_key(5, 26)
+        inverted = hill_encrypt.invert_key(original, 26)
+        inverted = hill_encrypt.invert_key(inverted, 26)
+        if np.array_equal(original, inverted):
+            sum += 1
 
-    word = 'UNAFLIANLWFNALNWFAFNLAWKMF' * 1000
-    word_num = [alphabet.find(x) for x in word]
-
-    print(f"ngrams on text: {sc2.score(word)}")
-    print(f"ngrams on numbers: {scorer.score(word_num)}")
-
-    t0 = time()
-    for _ in range(100):
-        sc2.score(word)
-    print(f"ngrams on text time: {time() - t0}")
-
-    t0 = time()
-    for _ in range(100):
-        scorer.score(word_num)
-    print(f"ngrams on numbers time: {time() - t0}")
-
-    l = [0, 3, 6, 23, 7, 7, 3, 7, 4, 3, 7, 2]
-    l2 = [[0, 3, 6, 23], [7, 7, 3, 7], [4, 3, 7, 2]]
-
-    print(f"Regular: {scorer.score(l)}, quality: {quality(lambda: scorer.score(l), t_=1)}")
-    print(f"Chunkified: {scorer.chunklist_score(l2)}, quality: {quality(lambda: scorer.chunklist_score(l2), t_=1)}")
+    print(f"Accuray: {sum / 1000:.2f}")
 
 
-def test_chunkify_text():
-    alphabet_len = len(alphabet)
-
+def test_smart_rand():
+    with open('./english_bigrams.txt', 'r') as file:
+        content = file.readlines()
+        splitted = np.array([line.replace("\n", "").split(" ") for line in content])
+        splitted[:, 1] = normalize([splitted[:, 1]])
+        bigram_data = {k: float(v) for k, v in splitted}
     text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
            'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
            'much to be tall like its companions—the pines and firs which grew around it.' \
@@ -341,24 +330,30 @@ def test_chunkify_text():
            'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
            'glittering on the ground, a hare would come springing along, and jump right over' \
            'the little tree; and then how mortified it would feel!'
-
     processed = preprocess_text(text, alphabet)
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
-    key_len = 2
 
-    scorer = ngram.NgramNumbers("./english_bigrams.txt", alphabet)
+    iters = 10000
+    count = 0
+    key_len = 7
+    alphabet_len = 26
 
-    key = random_key(key_len, alphabet_len)
-    encrypted = encrypt(processed, key, alphabet, freqs)
+    indexes = [x for x in range(key_len)]
 
-    chunkified = chunkify_text(encrypted, alphabet, freqs, key_len)
+    for _ in range(iters):
+        real_key = random_key(key_len, alphabet_len)
+        real_key_inv = hill_encrypt.invert_key(real_key, alphabet_len)
+        encrypted = encrypt(processed, real_key, alphabet, freqs)
+        #
+        indexes_to_change = random.sample(indexes, k=2)
+        real_key_inv_ch = randomize_rows(real_key_inv, 0.01, 0.5, alphabet_len, indexes_to_change)
 
-    guessed_key, value = fast_shotgun(chunkified, key_len, alphabet_len, scorer, t_limit=60 * 10, buffer_len=3,
-                                      j_max=3000)
+        _, index_to_change_pred = smart_rand_rows(real_key_inv_ch, encrypted, alphabet, bigram_data, freqs, init=True)
 
-    # print(f"ngram_value for real text: {scorer.chunklist_score(chunkify_text(processed, alphabet, freqs, key_len))/processed.__len__()}")
+        if index_to_change_pred[0] in indexes_to_change:
+            count += 1
 
-    print(f"cracked: {hill_encrypt.decrypt(encrypted, guessed_key, alphabet, freqs)}")
+    print(f"Accuracy: {count / iters}")
 
     pass
