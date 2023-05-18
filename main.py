@@ -10,7 +10,7 @@ import ngram
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key
-from tests import test_chunkify_text, test_shotgun, change_key_performance, perfomence_test, test_ngram_numbers
+from tests import test_shotgun, change_key_performance, perfomence_test, test_smart_rand
 from utils import preprocess_text
 
 import winsound
@@ -33,8 +33,8 @@ def crack_test():
     print(f"The key: \n{key}\n, ITS INVERSE: \n{hill_encrypt.invert_key(key, alphabet_len)}\n")
     encrypted = encrypt(processed, key, alphabet, freqs)
 
-    ngram_file_path = 'english_trigrams.txt'
-    # ngram_file_path = 'english_bigrams.txt'
+    # ngram_file_path = 'english_trigrams.txt'
+    ngram_file_path = 'english_bigrams.txt'
 
     """
     Best bend values
@@ -55,27 +55,26 @@ def crack_test():
     5       | 4        | 1.5
     """
     # trigram
-    # 3|2|0.05  | 271 (bateria)
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, ngram_file_path=ngram_file_path, freqs=freqs,
-                                          t_limit=60 * 20,
-                                          target_score=-3.7,
-                                          bad_score=-5.8,
-                                          print_threshold=-5.4,
-                                          search_deepness=1000,
-                                          row_bend=2,
-                                          elem_bend=0.05)
-
-    # cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
-    #                                       ngram_file_path=ngram_file_path,
-    #                                       freqs=freqs,
+    # 3|2|0.05  | 271 (bateria),  191, 223 (zasilanie)
+    # cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, ngram_file_path=ngram_file_path, freqs=freqs,
     #                                       t_limit=60 * 20,
-    #                                       target_score=-2.4,
-    #                                       bad_score=-4,
-    #                                       print_threshold=-3.6,
+    #                                       target_score=-3.7,
+    #                                       bad_score=-5.8,
+    #                                       print_threshold=-5.4,
     #                                       search_deepness=1000,
     #                                       row_bend=2,
-    #                                       elem_bend=0.01,
-    #                                       sound=True)
+    #                                       elem_bend=0.05)
+
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
+                                          ngram_file_path=ngram_file_path,
+                                          freqs=freqs,
+                                          t_limit=60 * 20,
+                                          target_score=-2.4,
+                                          bad_score=-4,
+                                          print_threshold=-3.6,
+                                          search_deepness=1000,
+                                          row_bend=2,
+                                          elem_bend=1.3)
 
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
@@ -157,18 +156,6 @@ def test_trigram():
     print(f"bi = {bigram_score / text_len}, tri = {trigram_score / text_len}")
 
 
-def test_inversion():
-    sum = 0
-    for _ in range(1000):
-        original = random_key(5, 26)
-        inverted = hill_encrypt.invert_key(original, 26)
-        inverted = hill_encrypt.invert_key(inverted, 26)
-        if np.array_equal(original, inverted):
-            sum += 1
-
-    print(f"Accuray: {sum/1000:.2f}")
-
-
 if __name__ == '__main__':
     # swap_rows_test()
     # crack_test()
@@ -187,9 +174,11 @@ if __name__ == '__main__':
 
     # change_key_performance()
 
-    crack_test()
+    # crack_test()
 
     # test_inversion()
+
+    test_smart_rand()
 
     # test_trigram()
     # test_shotgun(alphabet, n_tests=50)
