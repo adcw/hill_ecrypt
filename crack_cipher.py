@@ -18,6 +18,8 @@ from utils import disable_print, enable_print
 from math import ceil
 import winsound
 
+from numba import jit
+
 from typing import Callable
 
 
@@ -118,19 +120,22 @@ def upgrade_key(
             n_smarts = 0
 
         if not smarts:
-            if r < 0.75:
+            if r < 0.8:
                 key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
                                          alphabet_len=alphabet_len)
-            elif r < 0.85:
+            elif r < 0.9:
                 if perc < 0.35:
-                    key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs, init=init_smart)
+                    key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
+                                                 init=init_smart)
                     smarts = True
                     init_smart = False
                 else:
                     key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=1,
                                              alphabet_len=alphabet_len)
-            elif r < 0.9:
+            elif r < 0.95:
                 key_new = swap_rows(key_old)
+                for _ in range(5):
+                    key_new = swap_rows(key_new)
             else:
                 key_new = slide_key(key_old, alphabet_len)
 
@@ -227,6 +232,10 @@ def shotgun_hillclimbing(text: str,
     alphabet_len = len(alphabet)
 
     t0, itr, j = time(), 0, 0
+
+    if key_len == 2:
+        text = text[:120]
+
     word_len = len(text)
 
     target_score *= word_len
@@ -245,7 +254,6 @@ def shotgun_hillclimbing(text: str,
     notifier = Notifier([-3.2, -3, -2.6]) if sound else None
 
     if key_len == 2:
-        text = text[:120]
         key_old = random_key(key_len, word_len)
 
         while time() - t0 < t_limit:
@@ -260,7 +268,8 @@ def shotgun_hillclimbing(text: str,
                                                        freqs=freqs,
                                                        iters=search_deepness,
                                                        target_score=target_score,
-                                                       print_threshold=print_threshold
+                                                       print_threshold=print_threshold,
+                                                       bigram_data=bigram_data
                                                        )
             if found:
                 if notifier is not None:
