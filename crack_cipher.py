@@ -65,7 +65,7 @@ def upgrade_key(
         print_threshold: float = -3.4
 ):
     alphabet_len = len(alphabet)
-    word_len = len(cypher)
+    # word_len = len(cypher)
     number_of_upgrades = 0
 
     key_old = key.copy()
@@ -74,7 +74,7 @@ def upgrade_key(
 
     for i in range(iters):
 
-        perc = min(max(a * (value_old / word_len) + b, 0.01), 1)
+        perc = min(max(a * value_old + b, 0.01), 1)
         perc_rows = perc ** row_bend
         perc_elems = perc ** elem_bend
 
@@ -98,10 +98,10 @@ def upgrade_key(
         value_new = scorer.score(decoded_new)
 
         if value_new > value_old:
-            value_normalized = value_new / word_len
+            value_normalized = value_new
             if value_normalized >= print_threshold:
                 print(
-                    f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new / word_len}, "
+                    f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new}, "
                     f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = {key_new}")
                 number_of_upgrades += 1
             if value_normalized > target_score:
@@ -181,6 +181,10 @@ def shotgun_hillclimbing(text: str,
     t0, itr, j = time(), 0, 0
     word_len = len(text)
 
+    target_score *= word_len
+    bad_score *= word_len
+    print_threshold *= word_len
+
     a, b = perc_slope_function(bad_score, target_score)
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
@@ -250,7 +254,7 @@ def shotgun_hillclimbing(text: str,
                 table.sort(key=lambda row: (row[1]), reverse=True)
 
                 key_old = table[0][0]
-                value_old = table[0][1] / word_len
+                value_old = table[0][1]
 
                 # Update the notifier
                 if notifier is not None:
