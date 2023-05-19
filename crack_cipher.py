@@ -1,26 +1,18 @@
 import random
 import threading as thr
-from multiprocessing import Pool
-from mpire import WorkerPool
+from math import ceil
 from time import time
 
-from math import exp
 import numpy as np
+import winsound
+from mpire import WorkerPool
 from sklearn.preprocessing import normalize
-from tqdm import tqdm
 
 import ngram
-from hill_encrypt import encrypt, invert_key, fast_encrypt
-from hill_key import random_key, randomize_rows, add_rows_with_random, smart_rand_rows, swap_rows, slide_key, \
-    small_change
+from hill_encrypt import encrypt, invert_key
+from hill_key import random_key, randomize_rows, smart_rand_rows, swap_rows, slide_key
 from ngram import Ngram_score as ns
-from utils import disable_print, enable_print
-from math import ceil
-import winsound
-
-from numba import jit
-
-from typing import Callable
+from utils import enable_print
 
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):

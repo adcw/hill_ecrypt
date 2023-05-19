@@ -1,7 +1,5 @@
 from math import log10
 
-import numpy as np
-
 
 class Ngram_score(object):
     def __init__(self, ngram_file, sep=' '):
