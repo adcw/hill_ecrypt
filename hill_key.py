@@ -7,8 +7,6 @@ from numpy.linalg import linalg
 from hill_encrypt import encrypt
 from utils import are_coprime
 
-from numba import jit
-
 
 def random_key(key_len: int, alphabet_len: int):
     """

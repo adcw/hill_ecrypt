@@ -5,16 +5,14 @@ from time import time
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import normalize
-from sympy.concrete.guess import guess
 from tqdm import tqdm
 
 import hill_encrypt
 import ngram
 from crack_cipher import shotgun_hillclimbing
-from hill_encrypt import encrypt, fast_encrypt, chunkify, chunkify_text
+from hill_encrypt import encrypt, fast_encrypt, chunkify_text
 from hill_key import random_key, randomize_key, add_rows_with_random, randomize_rows, smart_rand_rows, is_valid_key, \
     swap_rows, slide_key, small_change
-from ngram import Ngram_score
 from utils import disable_print, enable_print, quality, preprocess_text, str2ints
 
 

@@ -1,23 +1,12 @@
-import random
-import time
 from string import ascii_uppercase as alphabet
 
-import numpy as np
-import numpy.linalg
 import pandas as pd
 
-import hill_encrypt
-import ngram
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key
-from tests import test_shotgun, change_key_performance, perfomence_test, test_smart_rand
+from tests import test_smart_rand
 from utils import preprocess_text
-
-import winsound
-
-from numba import jit, cuda
-from timeit import default_timer as timer
 
 
 def crack_test():
@@ -31,7 +20,7 @@ def crack_test():
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
-    print(f"The key: \n{key}\n, ITS INVERSE: \n{hill_encrypt.invert_key(key, alphabet_len)}\n")
+    print(f"THE KEY: {key}")
     encrypted = encrypt(processed, key, alphabet, freqs)
 
     ngram_file_path = 'english_trigrams.txt'
@@ -58,6 +47,18 @@ def crack_test():
     
     5, trigram: 0.11940322755261186 perc
     """
+
+
+    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
+                                          ngram_file_path=ngram_file_path,
+                                          freqs=freqs,
+                                          t_limit=60 * 20,
+                                          target_score=-2.4,
+                                          bad_score=-4,
+                                          print_threshold=-3.6,
+                                          search_deepness=1000,
+                                          row_bend=0.9,
+                                          elem_bend=1.3)
     # trigram
     # 3|2|0.05  | 271 (bateria),  191, 223 (zasilanie)
     cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, ngram_file_path=ngram_file_path, freqs=freqs,
@@ -82,8 +83,7 @@ def crack_test():
     #                                       print_threshold=-3.6,
     #                                       search_deepness=1000,
     #                                       row_bend=2,
-    #                                       elem_bend=1.1)
-
+    #                                       elem_bend=0.05)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
@@ -126,42 +126,6 @@ def guess_me_keys_test():
     print(f'True key length = {key_l}')
 
     pass
-
-
-def test_trigram():
-    bigram_scorer = ngram.Ngram_score(ngram_file='./english_bigrams.txt')
-    trigram_scorer = ngram.Ngram_score(ngram_file='./english_trigrams.txt')
-
-    text = 'Far down in the forest, where the warm sun and the fresh air made a sweet' \
-           'resting-place, grew a pretty little fir-tree; and yet it was not happy, it wished so' \
-           'much to be tall like its companions—the pines and firs which grew around it.' \
-           'The sun shone, and the soft air fluttered its leaves, and the little peasant children' \
-           'passed by, prattling merrily, but the fir-tree heeded them not. Sometimes the' \
-           'children would bring a large basket of raspberries or strawberries, wreathed on a' \
-           'straw, and seat themselves near the fir-tree, and say, "Is it not a pretty little tree?"' \
-           'which made it feel more unhappy than before. And yet all this while the tree' \
-           'grew a notch or joint taller every year; for by the number of joints in the stem of' \
-           'a fir-tree we can discover its age. Still, as it grew, it complained, "Oh! how I" \
-           "wish I were as tall as the other trees, then I would spread out my branches on' \
-           'every side, and my top would over-look the wide world. I should have the birds' \
-           'building their nests on my boughs, and when the wind blew, I should bow with' \
-           '    stately dignity like my tall companions." The tree was so discontented, that it" \
-            "took no pleasure in the warm sunshine, the birds, or the rosy clouds that floated' \
-           'over it morning and evening. Sometimes, in winter, when the snow lay white and' \
-           'glittering on the ground, a hare would come springing along, and jump right over' \
-           'the little tree; and then how mortified it would feel!'
-
-    text_len = len(text)
-    alphabet_len = len(alphabet)
-    key_len = 3
-
-    preprocessed = preprocess_text(text, alphabet)
-    key = random_key(key_len, alphabet_len)
-
-    bigram_score = bigram_scorer.score(preprocessed)
-    trigram_score = trigram_scorer.score(encrypt(preprocessed, key, alphabet))
-
-    print(f"bi = {bigram_score / text_len}, tri = {trigram_score / text_len}")
 
 
 if __name__ == '__main__':
