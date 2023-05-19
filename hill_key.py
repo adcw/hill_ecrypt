@@ -9,6 +9,7 @@ from utils import are_coprime
 
 from numba import jit
 
+
 def random_key(key_len: int, alphabet_len: int):
     """
     Generate random key from given array of ints
@@ -179,7 +180,6 @@ def swap_rows(key: matrix) -> matrix:
 
 
 def slide_key(key, alphabet_len: int, horizontal: bool = False) -> matrix:
-    temp = key.copy()
 
     def slide(k):
         l = key.shape[0]
@@ -195,8 +195,8 @@ def slide_key(key, alphabet_len: int, horizontal: bool = False) -> matrix:
         return k.T if not horizontal else k
 
     while True:
-        new_key = temp
-        result = slide(new_key)
+        temp = key.copy()
+        result = slide(temp)
         if is_valid_key(result, alphabet_len):
             return result
 
