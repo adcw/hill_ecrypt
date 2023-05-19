@@ -12,7 +12,7 @@ import ngram
 from hill_encrypt import encrypt, invert_key
 from hill_key import random_key, randomize_rows, smart_rand_rows, swap_rows, slide_key
 from ngram import Ngram_score as ns
-from utils import enable_print
+from utils import enable_print,disable_print
 
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
@@ -223,7 +223,7 @@ def shotgun_hillclimbing(text: str,
 
     alphabet_len = len(alphabet)
 
-    t0, itr, j = time(), 0, 0
+    t0, itr, j, itr_random = time(), 0, 0, 0
 
     if key_len == 2:
         text = text[:120]
@@ -323,18 +323,20 @@ def shotgun_hillclimbing(text: str,
                     return invert_key(key_old, alphabet_len), value_old
                 total = sum([row[3] for row in table])
                 print(f"Number of upgrades: {total}")
-                if total < 5:
-                    it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]]
-                    for i in range(len(it_args)):
+                if total < 5 and itr_random < 20:
+                    to_len = len(it_args)
+                    itr_random += 1
+                    it_args = [row[0] for row in table[:int(ceil(len(table) / (2 - itr_random/20)))]]
+                    for i in range(len(it_args), to_len):
                         it_args.append(random_key(key_len, alphabet_len))
                 else:
                     it_args = [row[0] for row in table[:int(ceil(len(table) / 2))]] * 2
                     it_args.pop()
                     it_args.append(random_key(key_len, alphabet_len))
-                print(f"Process Iteration of size: {len(it_args)}")
+                print(f"Process Iteration of size: {len(it_args)}, iteration of tasks nr: {itr}")
 
     t = time() - t0
-    print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+    print(f"time: {t:.2f}, iters: {itr}, {t / itr :.2f}s/t")
 
     if notifier is not None:
         notifier.failure()
