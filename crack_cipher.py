@@ -217,8 +217,12 @@ def shotgun_hillclimbing(text: str,
                          row_bend: float = 1,
                          elem_bend: float = 1,
                          sound: bool = False,
+                         sound_thresholds=None,
                          print_threshold: float = -3.4
                          ) -> tuple[np.matrix, float]:
+    if sound_thresholds is None:
+        sound_thresholds = [-3.2, -3, -2.6]
+
     scorer = ns(ngram_file_path)
 
     alphabet_len = len(alphabet)
@@ -229,6 +233,7 @@ def shotgun_hillclimbing(text: str,
         text = text[:120]
 
     word_len = len(text)
+    sound_thresholds = sound_thresholds * word_len
 
     target_score *= word_len
     bad_score *= word_len
@@ -243,7 +248,7 @@ def shotgun_hillclimbing(text: str,
         bigram_data = {k: float(v) for k, v in splitted}
 
     # Create notifier, give a list of thresholds after which the beeping occurs.
-    notifier = Notifier([-3.2, -3, -2.6]) if sound else None
+    notifier = Notifier(sound_thresholds) if sound else None
 
     if key_len == 2:
         key_old = random_key(key_len, word_len)
