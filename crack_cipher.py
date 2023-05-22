@@ -17,7 +17,9 @@ from utils import enable_print, disable_print
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
-
+    # args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
+    #         target_score,
+    #         print_threshold]
     # disable_print()
 
     def test(i):
@@ -36,6 +38,23 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
     enable_print()
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
+"""
+args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
+                target_score,
+                print_threshold]
+
+        key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
+
+        if start_key is not None:
+            it_args.pop()
+            it_args.append(start_key)
+
+        value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
+
+        with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
+            while time() - t0 < t_limit:
+"""
 
 
 def upgrade_key_unwraper(i, c):
@@ -287,7 +306,7 @@ def shotgun_hillclimbing(text: str,
                 print_threshold]
 
         key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
+        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 12)]
 
         if start_key is not None:
             it_args.pop()
@@ -297,7 +316,19 @@ def shotgun_hillclimbing(text: str,
 
         with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
             while time() - t0 < t_limit:
-                table = pool.map(upgrade_key_unwraper, iterable_of_args=it_args)
+                generator = pool.imap_unordered(upgrade_key_unwraper, iterable_of_args=it_args)
+                table = []
+                for next_row in generator:
+                    if next_row[2]:
+                        print("KILL")
+                        pool.terminate()
+                        pool.join()
+                        if sound:
+                            notifier.success()
+                        t = time() - t0
+                        print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+                        return invert_key(next_row[0], alphabet_len), next_row[1]
+                    table.append(next_row)
                 itr += 1
                 table.sort(key=lambda row: (row[1]), reverse=True)
 
@@ -309,6 +340,8 @@ def shotgun_hillclimbing(text: str,
                     notifier.update(value_old)
 
                 if table[0][2]:
+                    pool.terminate()
+                    pool.join()
                     if sound:
                         notifier.success()
                     t = time() - t0
