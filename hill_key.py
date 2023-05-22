@@ -74,9 +74,9 @@ def small_change(key: matrix, alphabet_len: int, perc_elem: float = 0.5):
 
 
 def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int,
-                   r_indexes: list[int] | None = None):
+                   r_indexes: list[int] | None = None, n_rows: int | None = None):
     key_len = key.shape[0]
-    n_rows_to_change = int(ceil(key_len * perc_rows))
+    n_rows_to_change = n_rows if n_rows is not None else int(ceil(key_len * perc_rows))
     n_elems_to_change = int(ceil(key_len * perc_elems))
     indexes = [x for x in range(key_len)]
     chosen_rows = random.sample(indexes, n_rows_to_change) if r_indexes is None else r_indexes
@@ -219,11 +219,11 @@ def add_rows_with_random(key: matrix, alphabet_len: int) -> matrix:
     return new_key
 
 
-cached_to_change = None
+cached_to_change: list[int] | None = None
 
 
 def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, freqs: list[float] | None = None,
-                    init: bool = False, perc: float = 1):
+                    init: bool = False, perc_rows: float = 1, n_rows: int | None = None):
     global cached_to_change
     alphabet_len = len(alphabet)
 
@@ -249,6 +249,6 @@ def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, 
         cached_to_change = np.argmax([summed], axis=1).tolist()
 
     fixed = randomize_rows(key, r_indexes=cached_to_change, alphabet_len=alphabet_len,
-                           perc_elems=perc,
-                           perc_rows=0.01)
+                           perc_elems=perc_rows,
+                           perc_rows=0.01, n_rows=n_rows)
     return fixed, cached_to_change
