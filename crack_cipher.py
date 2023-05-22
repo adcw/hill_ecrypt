@@ -338,8 +338,6 @@ def shotgun_hillclimbing(text: str,
                     notifier.update(value_old)
 
                 if table[0][2]:
-                    pool.terminate()
-                    pool.join()
                     if sound:
                         notifier.success()
                     t = time() - t0
