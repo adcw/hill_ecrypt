@@ -12,7 +12,7 @@ import ngram
 from hill_encrypt import encrypt, invert_key
 from hill_key import random_key, randomize_rows, smart_rand_rows, swap_rows, slide_key
 from ngram import Ngram_score as ns
-from utils import enable_print,disable_print
+from utils import enable_print, disable_print
 
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
@@ -60,6 +60,7 @@ def upgrade_key(
         print_threshold: float = -3.4
 ):
     alphabet_len = len(alphabet)
+    key_len = len(key)
     # word_len = len(cypher)
     number_of_upgrades = 0
 
@@ -69,7 +70,14 @@ def upgrade_key(
     init_smart = True
 
     n_smarts = 0
-    max_smarts = 50
+    max_smarts = 100
+
+    n_rows = None
+
+    ns_weights = np.concatenate(([1 for _ in range(key_len - 1)], [4]))
+
+    # len 4, bend = 2.2, 1.1
+    smart_threshold = 0.8
 
     for i in range(iters):
 
@@ -79,19 +87,20 @@ def upgrade_key(
 
         r = random.random()
 
-        if perc >= 0.5 or n_smarts >= max_smarts:
+        if perc < smart_threshold and init_smart:
+            most_prob = int(ceil(key_len * perc))
+            possible_ns = np.concatenate((np.arange(1, most_prob), np.arange(most_prob + 1, key_len + 1), [most_prob]))
+            n_rows = random.choices(possible_ns, ns_weights)
+
+        if perc >= smart_threshold or n_smarts >= max_smarts:
             smarts = False
             n_smarts = 0
         else:
             smarts = True
 
         if smarts and n_smarts < max_smarts:
-            if r < 0.9:
-                key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
-                                             init=init_smart, perc=perc_rows)
-            else:
-                key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
-                                             init=init_smart, perc=1)
+            key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
+                                         init=init_smart, n_rows=n_rows)
 
             init_smart = False
             n_smarts += 1
@@ -122,8 +131,8 @@ def upgrade_key(
 
             if value_normalized >= print_threshold:
                 print(
-                    f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new}, "
-                    f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = \n{key_new}\n")
+                    f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new}, perc = {perc:.3f} "
+                    f"perc_rows = {perc_rows:.3f}, perc_elems = {perc_elems:.3f} key = \n{key_new}\n")
                 number_of_upgrades += 1
             if value_normalized > target_score:
                 print(f'BEST: {decoded_new}, key = \n{key_new}')
@@ -310,7 +319,7 @@ def shotgun_hillclimbing(text: str,
                 if total < 5 and itr_random < 20:
                     to_len = len(it_args)
                     itr_random += 1
-                    it_args = [row[0] for row in table[:int(ceil(len(table) / (2 - itr_random/20)))]]
+                    it_args = [row[0] for row in table[:int(ceil(len(table) / (2 - itr_random / 20)))]]
                     for i in range(len(it_args), to_len):
                         it_args.append(random_key(key_len, alphabet_len))
                 else:
