@@ -311,9 +311,7 @@ def shotgun_hillclimbing(text: str,
                 table = []
                 for next_row in generator:
                     if next_row[2]:
-                        print("KILL")
                         pool.terminate()
-                        pool.join()
                         if sound:
                             notifier.success()
                         t = time() - t0
