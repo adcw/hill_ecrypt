@@ -307,7 +307,19 @@ def shotgun_hillclimbing(text: str,
 
         with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
             while time() - t0 < t_limit:
-                table = pool.map_unordered(upgrade_key_unwraper, iterable_of_args=it_args)
+                generator = pool.imap_unordered(upgrade_key_unwraper, iterable_of_args=it_args)
+                table = []
+                for next_row in generator:
+                    if next_row[2]:
+                        print("KILL")
+                        pool.terminate()
+                        pool.join()
+                        if sound:
+                            notifier.success()
+                        t = time() - t0
+                        print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+                        return invert_key(next_row[0], alphabet_len), next_row[1]
+                    table.append(next_row)
                 itr += 1
                 table.sort(key=lambda row: (row[1]), reverse=True)
 
@@ -319,6 +331,8 @@ def shotgun_hillclimbing(text: str,
                     notifier.update(value_old)
 
                 if table[0][2]:
+                    pool.terminate()
+                    pool.join()
                     if sound:
                         notifier.success()
                     t = time() - t0
