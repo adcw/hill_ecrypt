@@ -68,7 +68,6 @@ def upgrade_key(
     value_old = scorer.score(encrypt(cypher, key_old, alphabet, freqs))
     init_smart = True
 
-    smarts = False
     n_smarts = 0
     max_smarts = 50
 
@@ -80,50 +79,30 @@ def upgrade_key(
 
         r = random.random()
 
-        # if perc < 0.3:
-        #     if r < 0.8:
-        #         key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
-        #                                  alphabet_len=alphabet_len)
-        #     elif r < 0.9:
-        #         key_new = swap_rows(key_old)
-        #     else:
-        #         key_new = slide_key(key_old, alphabet_len)
-        # else:
-        #     if r < 0.6:
-        #         key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
-        #                                  alphabet_len=alphabet_len)
-        #     elif r < 0.65:
-        #         key_new = swap_rows(key_old)
-        #     elif r < 0.70:
-        #         key_new = slide_key(key_old, alphabet_len)
-        #     else:
-        #         key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
-        #                                      init=init_smart)
-        #         init_smart = False
-
-        if smarts and n_smarts < max_smarts:
-            key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs, init=init_smart)
-            init_smart = False
-            n_smarts += 1
-
-        if smarts and n_smarts == max_smarts:
-            # print(f"I WAS SMART MOTHERFUCKER: {encrypt(cypher,key_new,alphabet, freqs)}")
+        if perc >= 0.5 or n_smarts >= max_smarts:
             smarts = False
             n_smarts = 0
+        else:
+            smarts = True
+
+        if smarts and n_smarts < max_smarts:
+            if r < 0.9:
+                key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
+                                             init=init_smart, perc=perc_rows)
+            else:
+                key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
+                                             init=init_smart, perc=1)
+
+            init_smart = False
+            n_smarts += 1
 
         if not smarts:
             if r < 0.8:
                 key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=perc_elems,
                                          alphabet_len=alphabet_len)
             elif r < 0.9:
-                if perc < 0.35:
-                    key_new, _ = smart_rand_rows(key, cypher, alphabet, bigram_data=bigram_data, freqs=freqs,
-                                                 init=init_smart)
-                    smarts = True
-                    init_smart = False
-                else:
-                    key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=1,
-                                             alphabet_len=alphabet_len)
+                key_new = randomize_rows(key_old, perc_rows=perc_rows, perc_elems=1,
+                                         alphabet_len=alphabet_len)
             elif r < 0.95:
                 key_new = swap_rows(key_old)
                 for _ in range(5):
@@ -144,7 +123,7 @@ def upgrade_key(
             if value_normalized >= print_threshold:
                 print(
                     f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new}, "
-                    f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = {key_new}")
+                    f"perc_rows = {perc_rows}, perc_elems = {perc_elems} key = \n{key_new}\n")
                 number_of_upgrades += 1
             if value_normalized > target_score:
                 print(f'BEST: {decoded_new}, key = \n{key_new}')
