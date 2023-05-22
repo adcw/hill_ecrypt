@@ -2,6 +2,7 @@ from string import ascii_uppercase as alphabet
 
 import pandas as pd
 
+from hill_encrypt import invert_key
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key
@@ -20,7 +21,7 @@ def crack_test():
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
-    print(f"The key: \n{key}\n, ITS INVERSE: \n{hill_encrypt.invert_key(key, alphabet_len)}\n")
+    print(f"The key: \n{key}\n, ITS INVERSE: \n{invert_key(key, alphabet_len)}\n")
 
     encrypted = encrypt(processed, key, alphabet, freqs)
 
@@ -87,7 +88,7 @@ def guess_me_keys_test():
     freqs = letter_data['frequency'].tolist()
     processed = preprocess_text(text, alphabet)
     key = random_key(key_l, alphabet_len)
-    print(f"THE KEY: \n{key}, its inverse: \n{hill_encrypt.invert_key(key, alphabet_len)}")
+    print(f"THE KEY: \n{key}, its inverse: \n{invert_key(key, alphabet_len)}")
 
     encrypted = encrypt(processed, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs)
