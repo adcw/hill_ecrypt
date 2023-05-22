@@ -2,6 +2,7 @@ from string import ascii_uppercase as alphabet
 
 import pandas as pd
 
+import hill_encrypt
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key
@@ -10,7 +11,7 @@ from utils import preprocess_text
 
 
 def crack_test():
-    key_l = 5
+    key_l = 3
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -20,7 +21,8 @@ def crack_test():
     letter_data = pd.read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
-    print(f"THE KEY: {key}")
+    print(f"The key: \n{key}\n, ITS INVERSE: \n{hill_encrypt.invert_key(key, alphabet_len)}\n")
+
     encrypted = encrypt(processed, key, alphabet, freqs)
 
     ngram_file_path = 'english_trigrams.txt'
@@ -49,27 +51,29 @@ def crack_test():
     """
 
 
+    # cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
+    #                                       ngram_file_path=ngram_file_path,
+    #                                       freqs=freqs,
+    #                                       t_limit=60 * 20,
+    #                                       target_score=-2.4,
+    #                                       bad_score=-4,
+    #                                       print_threshold=-3.6,
+    #                                       search_deepness=1000,
+    #                                       row_bend=0.9,
+    #                                       elem_bend=1.3)
+    # trigram
+    # 3|2|0.05  | 271 (bateria),  191, 223 (zasilanie)
     cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
                                           ngram_file_path=ngram_file_path,
                                           freqs=freqs,
-                                          t_limit=60 * 20,
-                                          target_score=-2.4,
-                                          bad_score=-4,
-                                          print_threshold=-3.6,
-                                          search_deepness=1000,
-                                          row_bend=0.9,
-                                          elem_bend=1.3)
-    # trigram
-    # 3|2|0.05  | 271 (bateria),  191, 223 (zasilanie)
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet, ngram_file_path=ngram_file_path, freqs=freqs,
                                           bigram_file_path='english_bigrams.txt',
                                           t_limit=60 * 40,
                                           target_score=-3.7,
                                           bad_score=-5.8,
-                                          print_threshold=-20,
+                                          print_threshold=-5.5,
                                           search_deepness=1000,
-                                          row_bend=4.2,
-                                          elem_bend=1.5,
+                                          row_bend=1.8,
+                                          elem_bend=1.1,
                                           sound_thresholds=[5, 4.5, 4],
                                           sound=True)
 
@@ -117,7 +121,7 @@ def guess_me_keys_test():
     freqs = letter_data['frequency'].tolist()
     processed = preprocess_text(text, alphabet)
     key = random_key(key_l, alphabet_len)
-    print(f"THE KEY: {key}")
+    print(f"THE KEY: \n{key}, its inverse: \n{hill_encrypt.invert_key(key, alphabet_len)}")
 
     encrypted = encrypt(processed, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs)
