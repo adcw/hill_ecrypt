@@ -2,7 +2,6 @@ from string import ascii_uppercase as alphabet
 
 import pandas as pd
 
-import hill_encrypt
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_key import random_key
@@ -30,39 +29,17 @@ def crack_test():
 
     """
     Best bend values
-    Delete half check rest
     key_len | row bend | elem bend | times in s
-    2       | 1.35     | 0.9       | 2.95, 5.40, 6.09
-    3       | 1.8      | 0.8       | 68.6, 68.6, 68.75, 96.25, 151, 151
-    4       | 2        | 1.1       | 431,  550.30, 1201.46, 1220.55
-    5       | 4        | 1.5
-    """
-
-    """
-    Trigram:
-    key_len | row bend | elem bend | times in s
-    2       | 1.4      | 1         | 
-    3       | 2        | 1.3       | 126.8, 219
+    2       | 1.35     | 0.9       | 11.2
+    2       | 1.40     | 0.99      | 0.13, 8.82, 10.89
+    3       | 1.8      | 0.8       | 236.62, 272.63
     4       | 2        | 1.1       | 
     5       | 4        | 1.5
-    
+    3       | 1.9      | 0.9       | 148.50, 201.30, 347.30
     
     5, trigram: 0.11940322755261186 perc
     """
 
-
-    # cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
-    #                                       ngram_file_path=ngram_file_path,
-    #                                       freqs=freqs,
-    #                                       t_limit=60 * 20,
-    #                                       target_score=-2.4,
-    #                                       bad_score=-4,
-    #                                       print_threshold=-3.6,
-    #                                       search_deepness=1000,
-    #                                       row_bend=0.9,
-    #                                       elem_bend=1.3)
-    # trigram
-    # 3|2|0.05  | 271 (bateria),  191, 223 (zasilanie)
     cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
                                           ngram_file_path=ngram_file_path,
                                           freqs=freqs,
@@ -72,22 +49,11 @@ def crack_test():
                                           bad_score=-5.8,
                                           print_threshold=-5.5,
                                           search_deepness=1000,
-                                          row_bend=1.8,
-                                          elem_bend=1.1,
+                                          row_bend=1.9,
+                                          elem_bend=0.9,
                                           sound_thresholds=[5, 4.5, 4],
                                           sound=True)
 
-    # cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
-    #                                       ngram_file_path=ngram_file_path,
-    #                                       freqs=freqs,
-    #                                       t_limit=60 * 20,
-    #                                       target_score=-2.4,
-    #                                       bigram_file_path="english_bigrams.txt",
-    #                                       bad_score=-4,
-    #                                       print_threshold=-3.6,
-    #                                       search_deepness=1000,
-    #                                       row_bend=2,
-    #                                       elem_bend=0.05)
     cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
     print(f"Cracked text: {cracked_text}")
 
