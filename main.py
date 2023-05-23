@@ -61,6 +61,7 @@ def crack_test():
 
 
 def guess_me_keys_test():
+    """Guessing between 3 and 6"""
     key_l = 4
     alphabet_len = len(alphabet)
 
@@ -77,7 +78,7 @@ def guess_me_keys_test():
     table = guess_key_len(encrypted, alphabet, freqs=freqs, bigram_file_path='english_bigrams.txt',
                           ngram_file_path=ngram_file_path, )
     print(table)
-    print(f'I guess key length is= {table[0][2]}')
+    print(f'I guess key length is= {table[0][0].shape[0]}')
     print(f'True key length = {key_l}')
 
     pass

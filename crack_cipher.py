@@ -49,20 +49,19 @@ def guess_key_len(text: str,
     alphabet_len = len(alphabet)
     it_args = []
     table = []
-    for i in range(3, 8):
+    for i in range(3, 7):
         it_args.append([i, row_bend, elem_bend])
         row_bend += 0.6
         elem_bend += 0.2
 
-    with WorkerPool(n_jobs=7, shared_objects=args, daemon=True) as pool:
-        generator = pool.imap_unordered(guess_len_unwraper, iterable_of_args=it_args)
+    with WorkerPool(n_jobs=4, shared_objects=args, daemon=True) as pool:
+        generator = pool.imap_unordered(guess_len_unwraper, iterable_of_args=it_args, progress_bar=True)
         for next_row in generator:
             if next_row[2]:
                 pool.terminate()
                 return invert_key(next_row[0], alphabet_len), next_row[1]
             table.append(next_row)
     table.sort(key=lambda row: (row[1]), reverse=True)
-    print(table)
     return table
 
 
