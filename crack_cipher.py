@@ -17,6 +17,7 @@ from utils import enable_print, disable_print
 
 def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
     table = []
+
     # args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
     #         target_score,
     #         print_threshold]
@@ -38,23 +39,6 @@ def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list
     enable_print()
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
-"""
-args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
-                target_score,
-                print_threshold]
-
-        key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-        it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 10)]
-
-        if start_key is not None:
-            it_args.pop()
-            it_args.append(start_key)
-
-        value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-
-        with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
-            while time() - t0 < t_limit:
-"""
 
 
 def upgrade_key_unwraper(i, c):
@@ -93,7 +77,7 @@ def upgrade_key(
 
     n_rows = None
 
-    ns_weights = np.concatenate(([1 for _ in range(key_len - 1)], [4]))
+    ns_weights = np.concatenate(([1 for _ in range(key_len - 1)], [key_len - 1]))
 
     # len 4, bend = 2.2, 1.1
     smart_threshold = 0.6
@@ -106,12 +90,13 @@ def upgrade_key(
 
         r = random.random()
 
-        if perc < smart_threshold and init_smart:
+        if key_len != 2 and perc < smart_threshold and init_smart:
+            print("============ INIT SMART ============")
             most_prob = int(ceil(key_len * perc))
             possible_ns = np.concatenate((np.arange(1, most_prob), np.arange(most_prob + 1, key_len + 1), [most_prob]))
             n_rows = random.choices(possible_ns, ns_weights)
 
-        if perc >= smart_threshold or n_smarts >= max_smarts:
+        if key_len == 2 or perc >= smart_threshold or n_smarts >= max_smarts:
             smarts = False
             n_smarts = 0
         else:
@@ -189,11 +174,11 @@ class Notifier:
             self.t_dict[threshold_passing] = True
 
     def success(self):
-        for _ in range(10):
+        for _ in range(5):
             winsound.Beep(self.freq_success, self.duration)
 
     def failure(self):
-        for _ in range(10):
+        for _ in range(5):
             winsound.Beep(self.freq_failure, self.duration)
 
 
@@ -279,28 +264,12 @@ def shotgun_hillclimbing(text: str,
                 if notifier is not None:
                     notifier.success()
                 t = time() - t0
-                print(f"time: {t:.2f}, iters: {itr}, {t/itr:.2f}s/it")
+                print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
                 return invert_key(key_old, alphabet_len), value_old
             else:
                 key_old = random_key(key_len, alphabet_len)
 
     else:
-        """
-        
-        cypher: str,
-        alphabet: str,
-        scorer: ngram.Ngram_score,
-        a: float,
-        b: float,
-        row_bend: float,
-        elem_bend: float,
-
-        freqs: list[float] | None,
-        iters: int = 100,
-        target_score: float = -2.4,
-        print_threshold: float = -3.4
-        """
-
         args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
                 target_score,
                 print_threshold]
@@ -317,14 +286,16 @@ def shotgun_hillclimbing(text: str,
         with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
             while time() - t0 < t_limit:
                 generator = pool.imap_unordered(upgrade_key_unwraper, iterable_of_args=it_args)
+
                 table = []
                 for next_row in generator:
                     if next_row[2]:
-                        pool.terminate()
                         if sound:
                             notifier.success()
                         t = time() - t0
-                        print(f"time: {t:.2f}, iters: {itr}, {t/itr:.2f}s/it")
+                        print(f"time: {t:.2f}, iters: {itr}, {t / itr:.2f}s/it")
+                        pool.terminate()
+
                         return invert_key(next_row[0], alphabet_len), next_row[1]
                     table.append(next_row)
                 itr += 1
@@ -341,7 +312,7 @@ def shotgun_hillclimbing(text: str,
                     if sound:
                         notifier.success()
                     t = time() - t0
-                    print(f"time: {t:.2f}, iters: {itr}, {t/itr:.2f}s/it")
+                    print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
                     return invert_key(key_old, alphabet_len), value_old
 
                 total = sum([row[3] for row in table])
@@ -358,8 +329,10 @@ def shotgun_hillclimbing(text: str,
                     it_args.append(random_key(key_len, alphabet_len))
                 print(f"Process Iteration of size: {len(it_args)}, iteration of tasks nr: {itr}")
 
+                itr += 1
+
     t = time() - t0
-    print(f"time: {t:.2f}, iters: {itr}, {t / itr :.2f}s/t")
+    print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/t")
 
     if notifier is not None:
         notifier.failure()
