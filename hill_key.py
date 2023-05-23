@@ -84,7 +84,7 @@ def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_le
 
     def randomize(k):
         for row_index in chosen_rows:
-            row = key[row_index].copy().tolist()[0]
+            row = key[row_index].tolist()[0]
 
             for elem_index in chosen_elems:
                 row[elem_index] = (row[elem_index] + random.randint(0, alphabet_len - 1)) % alphabet_len
