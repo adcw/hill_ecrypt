@@ -1,5 +1,4 @@
 import random
-import threading as thr
 from math import ceil
 from time import time
 
@@ -12,31 +11,31 @@ import ngram
 from hill_encrypt import encrypt, invert_key
 from hill_key import random_key, randomize_rows, smart_rand_rows, swap_rows, slide_key
 from ngram import Ngram_score as ns
-from utils import enable_print, disable_print
+from utils import disable_print
+
+
+def guess_len_unwraper(args, key_len, row_bend, elem_bend):
+    disable_print()
+    table = single_process_shotgun(key_len, row_bend, elem_bend, *args)
+    return table
 
 
 def guess_key_len(text: str,
-                  key_len: int,
                   alphabet: str,
-                  ngram_file_path: str,
                   bigram_file_path: str,
-                  t_limit: int = 60 * 5,
+                  ngram_file_path: str,
+                  t_limit: int = 60 * 2,
                   search_deepness: int = 1000,
                   freqs: list[float] | None = None,
                   target_score: float = -2.4,
                   bad_score: float = -3.6,
-                  row_bend: float = 1,
-                  elem_bend: float = 1,
-                  print_threshold: float = -3.4
+                  row_bend: float = 1.9,
+                  elem_bend: float = 0.9,
                   ):
-    table = []
-    #
     # text: str,
-    # key_len: int,
     # alphabet: str,
     # ngram_file_path: str,
     # bigram_file_path: str,
-    #
     # t_limit: int = 60 * 5,
     # search_deepness: int = 1000,
     #
@@ -44,45 +43,26 @@ def guess_key_len(text: str,
     #
     # target_score: float = -2.4,
     # bad_score: float = -3.6,
-    # print_threshold: float = -3.4
-    # row_bend: float = 1,
-    # elem_bend: float = 1,
-    #
-    # ) -> tuple[np.matrix, float]:
-    args = [text, key_len, alphabet, ngram, bigram_file_path, t_limit, search_deepness, target_score, bad_score, freqs,
-            search_deepness]
-    disable_print()
+    # print_threshold: float = -3.4,
+    args = [text, alphabet, ngram_file_path, bigram_file_path, t_limit, search_deepness, freqs, target_score, bad_score]
 
-    def unwraper(i, c):
-        matrix, value, found = single_process_shotgun(*i, c[0], c[1])
-        return matrix, value, found
+    alphabet_len = len(alphabet)
+    it_args = []
+    table = []
+    for i in range(3, 8):
+        it_args.append([i, row_bend, elem_bend])
+        row_bend += 0.6
+        elem_bend += 0.2
 
-    # key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
-    # it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 12)]
-    #
-    # if start_key is not None:
-    #     it_args.pop()
-    #     it_args.append(start_key)
-    #
-    # value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
-    #
-    # with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
-    #     while time() - t0 < t_limit:
-    #         generator = pool.imap_unordered(upgrade_key_unwraper, iterable_of_args=it_args)
-    #
-    #         table = []
-    #         for next_row in generator:
-    #             if next_row[2]:
-    #                 if sound:
-    #                     notifier.success()
-    #                 t = time() - t0
-    #                 print(f"time: {t:.2f}, iters: {itr}, {t / itr:.2f}s/it")
-    #                 pool.terminate()
-    #
-    #                 return invert_key(next_row[0], alphabet_len), next_row[1]
-    #             table.append(next_row)
-    # enable_print()
+    with WorkerPool(n_jobs=7, shared_objects=args, daemon=True) as pool:
+        generator = pool.imap_unordered(guess_len_unwraper, iterable_of_args=it_args)
+        for next_row in generator:
+            if next_row[2]:
+                pool.terminate()
+                return invert_key(next_row[0], alphabet_len), next_row[1]
+            table.append(next_row)
     table.sort(key=lambda row: (row[1]), reverse=True)
+    print(table)
     return table
 
 
@@ -237,12 +217,13 @@ def perc_slope_function(bad_score: float, target_score: float) -> tuple[float, f
     return linear(bad_score, 1, target_score, 0.01)
 
 
-def single_process_shotgun(text: str,
-                           key_len: int,
+def single_process_shotgun(key_len: int,
+                           row_bend: float,
+                           elem_bend: float,
+                           text: str,
                            alphabet: str,
                            ngram_file_path: str,
                            bigram_file_path: str,
-
                            t_limit: int = 60 * 5,
                            search_deepness: int = 1000,
 
@@ -251,8 +232,7 @@ def single_process_shotgun(text: str,
                            target_score: float = -2.4,
                            bad_score: float = -3.6,
                            print_threshold: float = -3.4,
-                           row_bend: float = 1,
-                           elem_bend: float = 1,
+
                            ) -> tuple[np.matrix, float, bool]:
     """
     bieda edytion
@@ -296,6 +276,7 @@ def single_process_shotgun(text: str,
                                                    print_threshold=print_threshold,
                                                    bigram_data=bigram_data
                                                    )
+        print(time() - t0)
         if found:
             t = time() - t0
             print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
@@ -311,12 +292,9 @@ def shotgun_hillclimbing(text: str,
                          alphabet: str,
                          ngram_file_path: str,
                          bigram_file_path: str,
-
                          t_limit: int = 60 * 5,
                          search_deepness: int = 1000,
-
                          freqs: list[float] | None = None,
-
                          start_key: np.matrix | None = None,
                          target_score: float = -2.4,
                          bad_score: float = -3.6,
