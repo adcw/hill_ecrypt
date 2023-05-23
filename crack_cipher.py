@@ -89,14 +89,14 @@ def upgrade_key(
     init_smart = True
 
     n_smarts = 0
-    max_smarts = 100
+    max_smarts = 50
 
     n_rows = None
 
     ns_weights = np.concatenate(([1 for _ in range(key_len - 1)], [4]))
 
     # len 4, bend = 2.2, 1.1
-    smart_threshold = 0.8
+    smart_threshold = 0.6
 
     for i in range(iters):
 
@@ -279,7 +279,7 @@ def shotgun_hillclimbing(text: str,
                 if notifier is not None:
                     notifier.success()
                 t = time() - t0
-                print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+                print(f"time: {t:.2f}, iters: {itr}, {t/itr:.2f}s/it")
                 return invert_key(key_old, alphabet_len), value_old
             else:
                 key_old = random_key(key_len, alphabet_len)
@@ -324,7 +324,7 @@ def shotgun_hillclimbing(text: str,
                         if sound:
                             notifier.success()
                         t = time() - t0
-                        print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+                        print(f"time: {t:.2f}, iters: {itr}, {t/itr:.2f}s/it")
                         return invert_key(next_row[0], alphabet_len), next_row[1]
                     table.append(next_row)
                 itr += 1
@@ -341,8 +341,9 @@ def shotgun_hillclimbing(text: str,
                     if sound:
                         notifier.success()
                     t = time() - t0
-                    print(f"time: {t:.2f}, iters: {itr}, {itr / t:.2f}it/s")
+                    print(f"time: {t:.2f}, iters: {itr}, {t/itr:.2f}s/it")
                     return invert_key(key_old, alphabet_len), value_old
+
                 total = sum([row[3] for row in table])
                 print(f"Number of upgrades: {total}")
                 if total < 5 and itr_random < 20:
