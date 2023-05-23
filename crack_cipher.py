@@ -15,28 +15,73 @@ from ngram import Ngram_score as ns
 from utils import enable_print, disable_print
 
 
-def guess_key_len(text: str, alphabet: str, test_time: int = 60 * 3, freqs: list[float] | None = None):
+def guess_key_len(text: str,
+                  key_len: int,
+                  alphabet: str,
+                  ngram_file_path: str,
+                  bigram_file_path: str,
+                  t_limit: int = 60 * 5,
+                  search_deepness: int = 1000,
+                  freqs: list[float] | None = None,
+                  target_score: float = -2.4,
+                  bad_score: float = -3.6,
+                  row_bend: float = 1,
+                  elem_bend: float = 1,
+                  print_threshold: float = -3.4
+                  ):
     table = []
+    #
+    # text: str,
+    # key_len: int,
+    # alphabet: str,
+    # ngram_file_path: str,
+    # bigram_file_path: str,
+    #
+    # t_limit: int = 60 * 5,
+    # search_deepness: int = 1000,
+    #
+    # freqs: list[float] | None = None,
+    #
+    # target_score: float = -2.4,
+    # bad_score: float = -3.6,
+    # print_threshold: float = -3.4
+    # row_bend: float = 1,
+    # elem_bend: float = 1,
+    #
+    # ) -> tuple[np.matrix, float]:
+    args = [text, key_len, alphabet, ngram, bigram_file_path, t_limit, search_deepness, target_score, bad_score, freqs,
+            search_deepness]
+    disable_print()
 
-    # args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
-    #         target_score,
-    #         print_threshold]
-    # disable_print()
+    def unwraper(i, c):
+        matrix, value, found = single_process_shotgun(*i, c[0], c[1])
+        return matrix, value, found
 
-    def test(i):
-        matrix, value = shotgun_hillclimbing(text, i, alphabet, test_time, freqs=freqs)
-        table.append([matrix, value, i])
-        pass
-
-    threads = []
-    for i in range(2, 11):
-        threads.append(
-            thr.Thread(target=test, args=[i])
-        )
-        threads[-1].start()
-    for t in threads:
-        t.join()
-    enable_print()
+    # key_old = random_key(key_len=key_len, alphabet_len=alphabet_len)
+    # it_args = [random_key(key_len, alphabet_len) for _ in range(key_len * 12)]
+    #
+    # if start_key is not None:
+    #     it_args.pop()
+    #     it_args.append(start_key)
+    #
+    # value_old = scorer.score(encrypt(text, key_old, alphabet, freqs))
+    #
+    # with WorkerPool(n_jobs=12, shared_objects=args, keep_alive=True, daemon=True) as pool:
+    #     while time() - t0 < t_limit:
+    #         generator = pool.imap_unordered(upgrade_key_unwraper, iterable_of_args=it_args)
+    #
+    #         table = []
+    #         for next_row in generator:
+    #             if next_row[2]:
+    #                 if sound:
+    #                     notifier.success()
+    #                 t = time() - t0
+    #                 print(f"time: {t:.2f}, iters: {itr}, {t / itr:.2f}s/it")
+    #                 pool.terminate()
+    #
+    #                 return invert_key(next_row[0], alphabet_len), next_row[1]
+    #             table.append(next_row)
+    # enable_print()
     table.sort(key=lambda row: (row[1]), reverse=True)
     return table
 
@@ -190,6 +235,75 @@ def linear(x1, y1, x2, y2):
 
 def perc_slope_function(bad_score: float, target_score: float) -> tuple[float, float]:
     return linear(bad_score, 1, target_score, 0.01)
+
+
+def single_process_shotgun(text: str,
+                           key_len: int,
+                           alphabet: str,
+                           ngram_file_path: str,
+                           bigram_file_path: str,
+
+                           t_limit: int = 60 * 5,
+                           search_deepness: int = 1000,
+
+                           freqs: list[float] | None = None,
+
+                           target_score: float = -2.4,
+                           bad_score: float = -3.6,
+                           print_threshold: float = -3.4,
+                           row_bend: float = 1,
+                           elem_bend: float = 1,
+                           ) -> tuple[np.matrix, float, bool]:
+    """
+    bieda edytion
+    :return:
+    """
+    scorer = ns(ngram_file_path)
+
+    alphabet_len = len(alphabet)
+
+    t0, itr, j, itr_random = time(), 0, 0, 0
+
+    if key_len == 2:
+        text = text[:120]
+
+    word_len = len(text)
+
+    target_score *= word_len
+    bad_score *= word_len
+    print_threshold *= word_len
+
+    a, b = perc_slope_function(bad_score, target_score)
+
+    with open(bigram_file_path, 'r') as file:
+        content = file.readlines()
+        splitted = np.array([line.replace("\n", "").split(" ") for line in content])
+        splitted[:, 1] = normalize([splitted[:, 1]])
+        bigram_data = {k: float(v) for k, v in splitted}
+
+    key_old = random_key(key_len, word_len)
+    found = False
+    value_old = -1_000_000
+    while time() - t0 < t_limit:
+        key_old, value_old, found, a = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer,
+                                                   a=a,
+                                                   b=b,
+                                                   row_bend=row_bend,
+                                                   elem_bend=elem_bend,
+                                                   freqs=freqs,
+                                                   iters=search_deepness,
+                                                   target_score=target_score,
+                                                   print_threshold=print_threshold,
+                                                   bigram_data=bigram_data
+                                                   )
+        if found:
+            t = time() - t0
+            print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
+            return invert_key(key_old, alphabet_len), value_old, found
+        else:
+            key_old = random_key(key_len, alphabet_len)
+
+    return invert_key(key_old, alphabet_len), value_old, found
 
 
 def shotgun_hillclimbing(text: str,
