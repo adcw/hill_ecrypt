@@ -1,5 +1,6 @@
 import random
 from math import ceil
+from operator import itemgetter
 from time import time
 
 import numpy as np
@@ -61,7 +62,8 @@ def guess_key_len(text: str,
                 pool.terminate()
                 return invert_key(next_row[0], alphabet_len), next_row[1]
             table.append(next_row)
-    table.sort(key=lambda row: (row[1]), reverse=True)
+    # table.sort(key=lambda row: (row[1]), reverse=True)
+    table.sort(key=itemgetter(1), reverse=True)
     return table
 
 
@@ -390,8 +392,8 @@ def shotgun_hillclimbing(text: str,
                         return invert_key(next_row[0], alphabet_len), next_row[1]
                     table.append(next_row)
                 itr += 1
-                table.sort(key=lambda row: (row[1]), reverse=True)
-
+                # table.sort(key=lambda row: (row[1]), reverse=True)
+                table.sort(key=itemgetter(1), reverse=True)
                 key_old = table[0][0]
                 value_old = table[0][1]
 
