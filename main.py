@@ -2,6 +2,7 @@ from string import ascii_uppercase as alphabet
 
 import pandas as pd
 
+import crack_cipher
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_encrypt import invert_key
@@ -40,29 +41,19 @@ def crack_test():
     5, trigram: 0.11940322755261186 perc
     """
 
-    cracked_key, a = shotgun_hillclimbing(encrypted, key_l, alphabet,
-                                          ngram_file_path=ngram_file_path,
-                                          freqs=freqs,
-                                          bigram_file_path='english_bigrams.txt',
-                                          t_limit=60 * 120,
-                                          target_score=-3.7,
-                                          bad_score=-5.8,
-                                          print_threshold=-5.5,
-                                          search_deepness=1000,
-                                          row_bend=1.5,
-                                          elem_bend=1.2,
-                                          sound_thresholds=[5, 4.5, 4],
-                                          sound=False)
+    cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=alphabet,
+                                                   bigram_file_path='english_bigrams.txt',
+                                                   ngram_file_path=ngram_file_path,
+                                                   freqs=freqs)
 
-    cracked_text = decrypt(encrypted, cracked_key, alphabet, freqs)
-    print(f"Cracked text: {cracked_text}")
+    print(f"THIS IS CRACKED TEXT: {cracked_text}")
 
     pass
 
 
 def guess_me_keys_test():
-    """Guessing between 3 and 6"""
-    key_l = 4
+    """Guessing between 3 and 5"""
+    key_l = 3
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -76,7 +67,7 @@ def guess_me_keys_test():
     print(f"The key: \n{key}\n, ITS INVERSE: \n{invert_key(key, alphabet_len)}\n")
     encrypted = encrypt(processed, key, alphabet, freqs)
     table = guess_key_len(encrypted, alphabet, freqs=freqs, bigram_file_path='english_bigrams.txt',
-                          ngram_file_path=ngram_file_path, )
+                          ngram_file_path=ngram_file_path, t_limit=60 * 5)
     print(table)
     print(f'I guess key length is= {table[0][0].shape[0]}')
     print(f'True key length = {key_l}')
@@ -93,11 +84,13 @@ if __name__ == '__main__':
     # smart_swap_test()
     # test_chunkify_text()
     # change_key_performance()
-    crack_test()
+    # crack_test()
     # guess_me_keys_test()
     # gpu_test()
     # test_inversion()
     # test_smart_rand()
+
+    crack_test()
     # test_trigram()
     # test_shotgun(alphabet, n_tests=50)
 
