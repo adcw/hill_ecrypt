@@ -7,21 +7,18 @@ from typing import Callable
 from numpy import linalg, matrix, round
 
 
-# def gcd(a, b):
-#     """
-#     Oblicza największy wspólny dzielnik dwóch liczb całkowitych.
-#     """
-#     while b:
-#         a, b = b, a % b
-#     return a
-
-
 def disable_print():
+    """
+    This function sends all future prints into a null file
+    """
     sys.stdout = open(os.devnull, 'w')
 
 
 # Restore
 def enable_print():
+    """
+    This function sends all future prints into console
+    """
     sys.stdout = sys.__stdout__
 
 
@@ -51,12 +48,22 @@ def mod_inverse_matrix(m: matrix, modulo: int) -> matrix | None:
 
 
 def preprocess_text(text: str, alphabet: str):
+    """
+    :param text: raw text
+    :param alphabet: alphabet used in text (lower or upper)
+    :return: text that contain only letters
+    """
     text = text.upper()
     processed = [c for c in text if c in alphabet.upper()]
     return "".join(processed)
 
 
 def quality(callback: Callable, t_: int = 1):
+    """
+    :param callback: Callable function
+    :param t_: test time
+    :return: numer of iteration in test time
+    """
     disable_print()
     t0 = time.time()
     n_iters = 0
@@ -66,17 +73,3 @@ def quality(callback: Callable, t_: int = 1):
     enable_print()
 
     return n_iters
-
-
-cached_str2ints = None
-cached_alphabet = None
-
-
-def str2ints(text: str, alphabet: str):
-    global cached_str2ints, cached_alphabet
-
-    if alphabet != cached_alphabet:
-        cached_str2ints = {v: k for k, v in enumerate(alphabet)}
-        cached_alphabet = alphabet
-
-    return [cached_str2ints[char] for char in text]

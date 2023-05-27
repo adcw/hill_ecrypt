@@ -10,7 +10,7 @@ from utils import preprocess_text
 
 
 def crack_test():
-    key_l = 2
+    key_l = 4
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -32,9 +32,9 @@ def crack_test():
     key_len | row bend | elem bend | times in s
     2       | 1.40     | 0.99      | 0.13, 8.82, 10.89, 24.35(ała), 83.71(bardzo wredny klucz)
     3       | 1.9      | 0.9       | 99.42, 162.98 237.22
-    4       | 2        | 1.1       | 
-    5       | 4        | 1.5
-    2       | 1.3      | 0.8      |
+    4       | 2        | 1.1       | 720.50
+    5       | 4        | 1.5       | did not resolve in 2 hours
+    2       | 1.3      | 0.8       |
     
     
     5, trigram: 0.11940322755261186 perc
@@ -44,13 +44,13 @@ def crack_test():
                                           ngram_file_path=ngram_file_path,
                                           freqs=freqs,
                                           bigram_file_path='english_bigrams.txt',
-                                          t_limit=60 * 40,
+                                          t_limit=60 * 120,
                                           target_score=-3.7,
                                           bad_score=-5.8,
                                           print_threshold=-5.5,
                                           search_deepness=1000,
-                                          row_bend=1.3,
-                                          elem_bend=0.8,
+                                          row_bend=1.5,
+                                          elem_bend=1.2,
                                           sound_thresholds=[5, 4.5, 4],
                                           sound=False)
 
@@ -84,6 +84,8 @@ def guess_me_keys_test():
     pass
 
 
+# documenting
+
 if __name__ == '__main__':
     # swap_rows_test()
     # determinant_test()
@@ -91,8 +93,8 @@ if __name__ == '__main__':
     # smart_swap_test()
     # test_chunkify_text()
     # change_key_performance()
-    # crack_test()
-    guess_me_keys_test()
+    crack_test()
+    # guess_me_keys_test()
     # gpu_test()
     # test_inversion()
     # test_smart_rand()

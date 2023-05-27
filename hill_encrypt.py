@@ -1,7 +1,7 @@
 import random
 
 import numpy as np
-from numpy import matrix, matmul, ceil
+from numpy import matrix, ceil
 
 import utils
 
@@ -19,12 +19,6 @@ def invert_key(matr: matrix, alphabet_len: int):
     :return: the key inversion
     """
     return utils.mod_inverse_matrix(matr, alphabet_len)
-
-
-def chunkify_text(text: str, alphabet: str, freqs: list[float], chunk_size: int):
-    prepr = utils.preprocess_text(text, alphabet)
-    text_as_list = utils.str2ints(prepr, alphabet)
-    return chunkify(text_as_list, chunk_size, freqs, len(alphabet))
 
 
 def chunkify(numbers: list[int], chunk_size: int, freqs: list[float] | None = None, alphabet_len: int | None = None) -> \
@@ -93,79 +87,26 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     # split text to chunks
     chunks = chunkify(text_numbers, key.shape[0], freqs=freqs, alphabet_len=alphabet_len)
 
-    # v1
-    # encrypt each chunk and join into single string
+    # v1 <- generally slow
     # encrypted_chunks = []
     # for c in chunks:
     #     matr = matmul(key, c)
     #     encrypted_chunks += matrix(matr % 26).tolist()[0]
-    #
-    # # convert letter indexes to a string
     # encrypted_text = "".join([alphabet[x] for x in encrypted_chunks])
 
     # v2
-    # Encrypt each chunk using matrix multiplication
-    # encrypted_chunks = [np.dot(key, c) % alphabet_len for c in chunks]
-    #
-    # # Convert encrypted chunks to a string
-    # encrypted_text = ''.join(alphabet[int(x)] for chunk in encrypted_chunks for x in np.ravel(chunk))
+    # encrypted_chunks = [np.dot(key, c) % alphabet_len for c in chunks] <-fast
+    # encrypted_text = ''.join(alphabet[int(x)] for chunk in encrypted_chunks for x in np.ravel(chunk))<- slow
 
     # v3
-    # encrypted_chunks = [(key @ c) % alphabet_len for c in chunks]
-    # encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
+    # encrypted_chunks = [(key @ c) % alphabet_len for c in chunks] <-slow
+    # encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat) <-fast
 
     # v4
     encrypted_chunks = [np.dot(key, c) % alphabet_len for c in chunks]
     encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
 
     return encrypted_text
-
-
-def fast_encrypt(chunks: list[list[int]], key: matrix, alphabet_len: int):
-    return [(np.dot(key, chunk) % alphabet_len).tolist()[0] for chunk in chunks]
-
-
-# def fast_encrypt(text: str, key: matrix, alphabet: str, freqs: list[float]) -> str:
-#     key_len = len(key)
-#
-#     global glob_alphabet, int_to_char, char_to_int
-#     if alphabet != glob_alphabet:
-#         glob_alphabet = alphabet
-#         int_to_char = {k: v for k, v in enumerate(alphabet)}
-#         char_to_int = {v: k for k, v in enumerate(alphabet)}
-#
-#     text_numbers = [char_to_int.get(x) for x in text]
-#
-#     n_chunks = int(ceil(len(text_numbers) / key_len))
-#     encrypted = ""
-#     letter_codes = np.arange(len(alphabet))
-#
-#     for i in range(n_chunks):
-#         chunk = text_numbers[i * key_len:(i + 1) * key_len]
-#         to_draw = key_len - len(chunk)
-#
-#         if to_draw != 0:
-#             drawn = random.choices(letter_codes, freqs, k=to_draw)
-#             chunk.extend(drawn)
-#
-#         encrypted_chunk = encrypt_chunk(key, chunk)
-#         encrypted += "".join(int_to_char.get(num) for num in encrypted_chunk)
-#
-#     return encrypted
-
-
-def encrypt_chunk(key: matrix, chunk: list[int]) -> list[int]:
-    """
-    encryption of chunk
-    :param key: key
-    :param chunk: a text encoded as indexes of alphabet's letters
-    :return: encrypted indexes
-    """
-    matr = matmul(key, chunk)
-    matr = matrix(matr % 26).tolist()[0]
-
-    return matr
-
 
 def decrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = None) -> str:
     """
@@ -178,18 +119,3 @@ def decrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     # return encryption using inverted key (actual decryption)
     return encrypt(text, inv_key, alphabet, freqs)
 
-
-def decrypt_chunk(key: matrix, chunk: list[int], alphabet_len: int):
-    """
-    Decryption of a chunk
-    :param key: the key used to encrypt the chunk
-    :param chunk: the chunk
-    :param alphabet_len: the lenght of the alphabet of the chunk
-    :return: decrypted chunk
-    """
-
-    # calculate key inversion
-    inv_key = invert_key(key, alphabet_len)
-
-    # return encrypted chunk
-    return encrypt_chunk(inv_key, chunk)
