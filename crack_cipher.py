@@ -33,6 +33,17 @@ def guess_key_len(text: str,
                   row_bend: float = 1.9,
                   elem_bend: float = 0.9,
                   ):
+    """
+    Function tries to find correct len of key. Keys longer then 4 are not guarantee to return correct len as best.
+    :param text: processed text
+    :param alphabet: alphabet used
+    :param bigram_file_path: str
+    :param ngram_file_path: str
+    :param t_limit: time in to analyze different len_key
+    :param search_deepness: how many interactions to try before switching key in len_key
+    :param freqs: frequency of letters
+    :return: list sorted by value structured accordingly [[key,value(how good the key is), did it cracked the text?][key,...]...]
+    """
     # text: str,
     # alphabet: str,
     # ngram_file_path: str,
@@ -88,6 +99,11 @@ def upgrade_key(
         target_score: float = -2.4,
         print_threshold: float = -3.4
 ):
+    """
+    function tries to find better key
+    :param iters: number of attempts
+    :return:  tuple[key, value of key, did it crack the text?, how many better keys were located]
+    """
     alphabet_len = len(alphabet)
     key_len = len(key)
     # word_len = len(cypher)
@@ -236,8 +252,19 @@ def single_process_shotgun(key_len: int,
 
                            ) -> tuple[np.matrix, float, bool]:
     """
-    bieda edytion
-    :return:
+    shotgun_hill-climbing classical version
+    :param text: process text
+    :param key_len: suspected len of key
+    :param t_limit: amount of time you are wiling to wait in seconds
+    :param search_deepness: how hard to try specific hill
+    :param freqs: frequency of letters
+    :param start_key: key you suspect is good or close
+    :param target_score: change if not using english
+    :param bad_score: change if not using english
+    :param row_bend: bend of learning function for rows
+    :param elem_bend: bend of learning function for rows
+    :param print_threshold: the minimal current solution quality value determining to print it to the console
+    :return: [key used to encrypt, value]
     """
     scorer = ns(ngram_file_path)
 
@@ -305,6 +332,25 @@ def shotgun_hillclimbing(text: str,
                          sound_thresholds=None,
                          print_threshold: float = -3.4
                          ) -> tuple[np.matrix, float]:
+    """
+     shotgun_hill-climbing, multiprocessor version with analytical function near finish
+     function recognize key_len = 2, and do not activities multiprocessing as it would take more time than just
+      cracking on one.
+    :param text: process text
+    :param key_len: suspected len of key
+    :param t_limit: amount of time you are wiling to wait in seconds
+    :param search_deepness: how hard to try specific hill
+    :param freqs: frequency of letters
+    :param start_key: key you suspect is good or close
+    :param target_score: change if not using english
+    :param bad_score: change if not using english
+    :param row_bend: bend of learning function for rows
+    :param elem_bend: bend of learning function for rows
+    :param sound: play a sound at the end of process
+    :param sound_thresholds: Quality thresholds, after reaching which the sound notification occurs.
+    :param print_threshold: the minimal current solution quality value determining to print it to the console
+    :return: [key used to encrypt, value]
+    """
     if sound_thresholds is None:
         sound_thresholds = [-3.2, -3, -2.6]
 
