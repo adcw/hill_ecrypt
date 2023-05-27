@@ -8,17 +8,91 @@ import winsound
 from mpire import WorkerPool
 from sklearn.preprocessing import normalize
 
+from tqdm import tqdm
+
+import hill_encrypt
 import ngram
 from hill_encrypt import encrypt, invert_key
 from hill_key import random_key, randomize_rows, smart_rand_rows, swap_rows, slide_key
 from ngram import Ngram_score as ns
-from utils import disable_print
+from utils import disable_print, enable_print
 
 
 def guess_len_unwraper(args, key_len, row_bend, elem_bend):
-    disable_print()
     table = single_process_shotgun(key_len, row_bend, elem_bend, *args)
     return table
+
+
+def crack(cypher: str,
+          alphabet: str,
+          bigram_file_path: str = 'english_bigrams.txt',
+          ngram_file_path: str = 'english_trigrams.txt',
+          search_deepness: int = 1000,
+          freqs: list[float] | None = None,
+          target_score: float = -3.7,
+          bad_score: float = -5.8,
+          print_threshold: int = -5,
+          ) -> tuple[str, np.matrix]:
+    # try to crack cypher for key_len = 2
+    print("Trying to crack the text using keys of shape 2x2...")
+    disable_print()
+    key, value = shotgun_hillclimbing(text=cypher, key_len=2, alphabet=alphabet, ngram_file_path=ngram_file_path,
+                                      bigram_file_path=bigram_file_path,
+                                      t_limit=60,
+                                      search_deepness=1000,
+                                      freqs=freqs,
+                                      target_score=target_score,
+                                      bad_score=bad_score,
+                                      print_threshold=print_threshold,
+                                      row_bend=1.4,
+                                      elem_bend=0.99,
+                                      )
+
+    enable_print()
+    if value > target_score * 120:
+        return hill_encrypt.decrypt(cypher, key, alphabet, freqs), key
+
+    print("Cracking failed. Attempting to guess the length of the key...")
+
+    # Get potential keys
+    guess_table = guess_key_len(cypher, alphabet, freqs=freqs, bigram_file_path=bigram_file_path,
+                                ngram_file_path=ngram_file_path, t_limit=60)
+
+    best_keys = guess_table[:2][0]
+    print(f"KEYS TO CHECK: {best_keys}")
+    cracked_key = None
+
+    improved = []
+    # try to improve pre-guessed keys
+    for potential_key in best_keys:
+        key_len = potential_key.shape[0]
+        print(f"STARTING TEST FOR KEY_LEN = {key_len}")
+        cracked_key, cracked_key_value = shotgun_hillclimbing(cypher, key_len, alphabet,
+                                                              ngram_file_path=ngram_file_path,
+                                                              freqs=freqs,
+                                                              bigram_file_path=bigram_file_path,
+                                                              t_limit=60 * 40,
+                                                              target_score=-3.7,
+                                                              bad_score=bad_score,
+                                                              print_threshold=print_threshold,
+                                                              start_key=potential_key,
+                                                              search_deepness=search_deepness,
+                                                              row_bend=1.6 ** (key_len - 2),
+                                                              elem_bend=1.2 ** (key_len - 2) - 0.2,
+                                                              sound_thresholds=[5, 4.5, 4],
+                                                              sound=False)
+
+        improved.append((cracked_key_value, cracked_key))
+
+        enable_print()
+        if cracked_key_value > target_score * len(cypher):
+            print(f"PROBLEM SOLVED FOR KEY_LEN = {key_len}")
+            break
+
+    improved.sort(key=itemgetter(0), reverse=True)
+    cracked_key = improved[0][1]
+
+    return hill_encrypt.decrypt(cypher, cracked_key, alphabet, freqs), cracked_key
 
 
 def guess_key_len(text: str,
@@ -61,14 +135,18 @@ def guess_key_len(text: str,
     alphabet_len = len(alphabet)
     it_args = []
     table = []
-    for i in range(3, 7):
+
+    len_from, len_to = 3, 5
+
+    for i in range(len_from, len_to + 1):
         it_args.append([i, row_bend, elem_bend])
         row_bend += 0.6
         elem_bend += 0.2
 
-    with WorkerPool(n_jobs=4, shared_objects=args, daemon=True) as pool:
-        generator = pool.imap_unordered(guess_len_unwraper, iterable_of_args=it_args, progress_bar=True)
-        for next_row in generator:
+    with WorkerPool(n_jobs=len_to - len_from + 1, shared_objects=args, daemon=True) as pool:
+        generator = pool.imap_unordered(guess_len_unwraper, iterable_of_args=it_args)
+        for next_row in tqdm(generator, total=len(it_args)):
+            print(next_row)
             if next_row[2]:
                 pool.terminate()
                 return invert_key(next_row[0], alphabet_len), next_row[1]
@@ -133,7 +211,6 @@ def upgrade_key(
         r = random.random()
 
         if key_len != 2 and perc < smart_threshold and init_smart:
-            print("============ INIT SMART ============")
             most_prob = int(ceil(key_len * perc))
             possible_ns = np.concatenate((np.arange(1, most_prob), np.arange(most_prob + 1, key_len + 1), [most_prob]))
             n_rows = random.choices(possible_ns, ns_weights)
@@ -241,7 +318,7 @@ def single_process_shotgun(key_len: int,
                            alphabet: str,
                            ngram_file_path: str,
                            bigram_file_path: str,
-                           t_limit: int = 60 * 5,
+                           t_limit: int = 60 * 2,
                            search_deepness: int = 1000,
 
                            freqs: list[float] | None = None,
@@ -289,11 +366,18 @@ def single_process_shotgun(key_len: int,
         splitted[:, 1] = normalize([splitted[:, 1]])
         bigram_data = {k: float(v) for k, v in splitted}
 
-    key_old = random_key(key_len, word_len)
+    key_old = random_key(key_len, alphabet_len)
     found = False
     value_old = -1_000_000
+    n_iters = 0
+
+    max_buffer = 3
+    buffer = []
+    buffer_weights = [max_buffer - i for i in range(max_buffer)]
+
     while time() - t0 < t_limit:
-        key_old, value_old, found, a = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer,
+        n_iters += 1
+        key_old, value_old, found, _ = upgrade_key(key=key_old, cypher=text, alphabet=alphabet, scorer=scorer,
                                                    a=a,
                                                    b=b,
                                                    row_bend=row_bend,
@@ -304,13 +388,30 @@ def single_process_shotgun(key_len: int,
                                                    print_threshold=print_threshold,
                                                    bigram_data=bigram_data
                                                    )
-        print(time() - t0)
         if found:
             t = time() - t0
             print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
             return invert_key(key_old, alphabet_len), value_old, found
         else:
-            key_old = random_key(key_len, alphabet_len)
+            buffer_space_available = len(buffer) < max_buffer
+
+            # insert solution to the buffer
+            if buffer_space_available:
+                buffer.append((value_old, key_old))
+            else:
+                buffer.sort(key=itemgetter(0), reverse=True)
+                print(f"key_len = {key_len}, perc = {min(max(a * buffer[0][0] + b, 0.01), 1)}")
+                buffer[max_buffer - 1] = (value_old, key_old)
+
+            # get random key from buffer or generate a new one
+            if not buffer_space_available and random.random() < 0.9:
+                key_old = random.choices(population=buffer, weights=buffer_weights, k=1)[0][1]
+            else:
+                key_old = random_key(key_len, alphabet_len)
+
+    enable_print()
+    print(f"niters = {n_iters}")
+    disable_print()
 
     return invert_key(key_old, alphabet_len), value_old, found
 
