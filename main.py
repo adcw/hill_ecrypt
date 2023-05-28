@@ -3,15 +3,19 @@ from string import ascii_uppercase as alphabet
 import pandas as pd
 
 import crack_cipher
+import hill_encrypt
+import hill_key
+import ngram
+import utils
 from crack_cipher import shotgun_hillclimbing, guess_key_len
 from hill_encrypt import encrypt, decrypt
 from hill_encrypt import invert_key
 from hill_key import random_key
-from utils import preprocess_text
+from utils import preprocess_text, generate_grams
 
 
 def crack_test():
-    key_l = 4
+    key_l = 3
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -75,6 +79,31 @@ def guess_me_keys_test():
     pass
 
 
+def test_german():
+    german_alphabet, german_bigrams, german_trigrams, german_freqs = utils.get_german()
+
+    with open("german_text_to_crack.txt") as file:
+        text = file.read()
+
+    text = preprocess_text(text, german_alphabet)
+
+    key_len = 3
+    alphabet_len = len(german_alphabet)
+    key = hill_key.random_key(key_len, alphabet_len)
+
+    print(f"KEY:\n{key}, inverse:\n{hill_encrypt.invert_key(key, alphabet_len)}")
+
+    encrypted = encrypt(text, key, german_alphabet, german_freqs)
+
+    cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=german_alphabet,
+                                                   bigram_file_path=german_bigrams,
+                                                   ngram_file_path=german_trigrams,
+                                                   freqs=german_freqs, target_score=-3.2, bad_score=-6.2,
+                                                   print_threshold=-100)
+
+    print(f"THIS IS CRACKED TEXT: {cracked_text}")
+
+
 # documenting
 
 if __name__ == '__main__':
@@ -90,10 +119,19 @@ if __name__ == '__main__':
     # test_inversion()
     # test_smart_rand()
 
-    crack_test()
+    # crack_test()
     # test_trigram()
     # test_shotgun(alphabet, n_tests=50)
 
     # test_ngram_numbers()
 
-    pass
+    test_german()
+    # with open('./german_text_in', encoding="UTF-8") as file:
+    #     txt = file.read()
+    #     scorer = ngram.Ngram_score("./german_trigrams.txt")
+    #     target, bad = crack_cipher.get_scores(txt, "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß", scorer)
+    #
+    #     print(f"target = {target}, bad = {bad}")
+
+    # utils.generate_grams('./german_text_in', './german_trigrams.txt', n=3, alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß")
+    # utils.generate_grams('./german_text_in', './german_bigrams.txt.txt', n=2, alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß")
