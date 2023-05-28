@@ -1,3 +1,4 @@
+import operator
 import os
 import sys
 import time
@@ -5,6 +6,7 @@ from math import gcd
 from typing import Callable
 
 from numpy import linalg, matrix, round
+from pandas import read_csv
 
 
 def disable_print():
@@ -73,3 +75,39 @@ def quality(callback: Callable, t_: int = 1):
     enable_print()
 
     return n_iters
+
+
+def generate_grams(in_file_path: str, out_file_path: str, alphabet: str, n: int = 2):
+    with open(in_file_path, encoding='UTF-8') as file_in:
+        text = file_in.read()
+        text = preprocess_text(text, alphabet)
+
+    dictionary = dict()
+
+    for i in range(0, len(text) - n):
+        gram = text[i:i + n]
+
+        if gram in dictionary:
+            dictionary[gram] += 1
+        else:
+            dictionary[gram] = 1
+
+    entries = [f"{key} {value}" for key, value in
+               sorted([i for i in dictionary.items()], key=operator.itemgetter(1), reverse=True)]
+
+    text = "\n".join(entries)
+
+    with open(out_file_path, encoding='UTF-8', mode='w+') as file:
+        file.write(text)
+
+
+def get_german():
+    german_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß"
+    german_bigrams = "./german_bigrams.txt"
+    german_trigrams = "./german_trigrams.txt"
+    german_letter_freqs = "./german_letters.csv"
+
+    letter_data = read_csv(german_letter_freqs)
+    freqs = letter_data['frequency'].tolist()
+
+    return german_alphabet, german_bigrams, german_trigrams, freqs
