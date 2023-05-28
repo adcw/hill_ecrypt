@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 import hill_encrypt
 import ngram
+import utils
 from hill_encrypt import encrypt, invert_key
 from hill_key import random_key, randomize_rows, smart_rand_rows, swap_rows, slide_key
 from ngram import Ngram_score as ns
@@ -31,7 +32,7 @@ def crack(cypher: str,
           freqs: list[float] | None = None,
           target_score: float = -3.7,
           bad_score: float = -5.8,
-          print_threshold: int = -5,
+          print_threshold: float = -5,
           ) -> tuple[str, np.matrix]:
     # try to crack cypher for key_len = 2
     print("Trying to crack the text using keys of shape 2x2...")
@@ -77,7 +78,7 @@ def crack(cypher: str,
                                                               print_threshold=print_threshold,
                                                               start_key=potential_key,
                                                               search_deepness=search_deepness,
-                                                              row_bend=1.6 ** (key_len - 2),
+                                                              row_bend=1.7 ** (key_len - 2),
                                                               elem_bend=1.2 ** (key_len - 2) - 0.2,
                                                               sound_thresholds=[5, 4.5, 4],
                                                               sound=False)
@@ -578,3 +579,18 @@ def shotgun_hillclimbing(text: str,
         notifier.failure()
 
     return invert_key(key_old, alphabet_len), value_old
+
+
+def get_scores(text: str, alphabet: str, scorer: ngram.Ngram_score):
+    text = utils.preprocess_text(text, alphabet)
+    text_len = len(text)
+
+    #generate target score
+    target_score = scorer.score(text) / text_len
+
+    #generate bad score
+    key = random_key(3, len(alphabet))
+    enc = encrypt(text, key, alphabet)
+    bad_score = scorer.score(enc) / text_len
+
+    return target_score, bad_score
