@@ -150,7 +150,8 @@ def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, 
         bigram_values = []
         for i in range(len(decrypted_err) - 1):
             chars = decrypted_err[i:i + 2]
-            bigram_values.append(bigram_data[chars])
+            bd = bigram_data[chars] if chars in bigram_data else 0
+            bigram_values.append(bd)
 
         recalculated = [2 * bigram_values[0]]
         for i in range(len(bigram_values) - 1):
