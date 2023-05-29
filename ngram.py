@@ -32,8 +32,11 @@ class Ngram_score(object):
         for i in range(len(text) - self.gram_size + 1):
             trimmed = text[i:i + self.gram_size]
 
-            if trimmed in self.ngrams:
-                score += ngrams(trimmed)
-            else:
-                score += self.floor
+            val = self.ngrams.get(trimmed)
+
+            if val is None:
+                val = self.floor
+
+            score += val
+
         return score
