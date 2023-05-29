@@ -56,6 +56,7 @@ def is_valid_key(key: matrix, alphabet_len: int):
     # and is coprime with alphabet length
     return det != 0 and are_coprime(det, alphabet_len)
 
+
 def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_len: int,
                    r_indexes: list[int] | None = None, n_rows: int | None = None):
     key_len = key.shape[0]
@@ -150,7 +151,11 @@ def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, 
         bigram_values = []
         for i in range(len(decrypted_err) - 1):
             chars = decrypted_err[i:i + 2]
-            bd = bigram_data[chars] if chars in bigram_data else 0
+            bd = bigram_data.get(chars)
+
+            if bd is None:
+                bd = 1
+
             bigram_values.append(bd)
 
         recalculated = [2 * bigram_values[0]]
