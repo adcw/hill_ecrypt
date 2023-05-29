@@ -7,7 +7,6 @@ import numpy as np
 import winsound
 from mpire import WorkerPool
 from sklearn.preprocessing import normalize
-
 from tqdm import tqdm
 
 import hill_encrypt
@@ -80,7 +79,7 @@ def crack(cypher: str,
     guess_table = guess_key_len(cypher, alphabet, freqs=freqs, bigram_file_path=bigram_file_path,
                                 ngram_file_path=ngram_file_path, t_limit=60)
 
-    best_keys = guess_table[:2][0]
+    best_keys = [row[0] for row in guess_table]
     print(f"KEYS TO CHECK: {best_keys}")
     cracked_key = None
 

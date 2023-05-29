@@ -14,7 +14,7 @@ from utils import preprocess_text
 
 
 def crack_test():
-    key_l = 3
+    key_l = 5
     alphabet_len = len(alphabet)
 
     with open("./text.txt", "r") as file:
@@ -86,7 +86,7 @@ def test_german():
 
     text = preprocess_text(text, german_alphabet)
 
-    key_len = 4
+    key_len = 5
     alphabet_len = len(german_alphabet)
     key = hill_key.random_key(key_len, alphabet_len)
 
