@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 import hill_encrypt
 from hill_encrypt import encrypt
 from hill_key import random_key, randomize_rows, smart_rand_rows, is_valid_key, swap_rows, slide_key
-from utils import disable_print, enable_print, quality, preprocess_text
+from utils import quality, preprocess_text
 
 
 def perfomence_test():
@@ -76,12 +76,10 @@ def perfomence_test():
     print(f'mod_inverse_matrix: {itr}')
 
     itr = 0
-    disable_print()
     t0 = time()
     while time() - t0 < t_limit:
         random_key(key_len, alphabet_len)
         itr += 1
-    enable_print()
     print(f'random_key: {itr}')
 
     from hill_key import is_valid_key
@@ -157,13 +155,10 @@ def change_key_performance():
     """
     Generates a report to console about speed of functions that change key
     """
-    disable_print()
 
     key_l = 5
     alphabet_len = 26
     key = random_key(key_l, alphabet_len)
-
-    enable_print()
 
     # tests
     is_valid_key_t = quality(lambda: is_valid_key(key, alphabet_len), t_=1)
