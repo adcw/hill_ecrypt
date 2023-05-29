@@ -59,7 +59,7 @@ def crack(cypher: str,
     disable_print()
     key, value = shotgun_hillclimbing(text=cypher, key_len=2, alphabet=alphabet, ngram_file_path=ngram_file_path,
                                       bigram_file_path=bigram_file_path,
-                                      t_limit=60,
+                                      t_limit=30,
                                       search_deepness=1000,
                                       freqs=freqs,
                                       target_score=target_score,
@@ -76,18 +76,26 @@ def crack(cypher: str,
     print("Cracking failed. Attempting to guess the length of the key...")
 
     # Get potential keys
+    disable_print()
     guess_table = guess_key_len(cypher, alphabet, freqs=freqs, bigram_file_path=bigram_file_path,
                                 ngram_file_path=ngram_file_path, t_limit=60)
+    enable_print()
 
     best_keys = [row[0] for row in guess_table]
-    print(f"KEYS TO CHECK: {best_keys}")
+    print(f"Keys to check:")
+    print("============================================")
+    for k in best_keys:
+        print(k)
+        print("============================================")
+
     cracked_key = None
 
     improved = []
     # try to improve pre-guessed keys
     for potential_key in best_keys:
         key_len = potential_key.shape[0]
-        print(f"STARTING TEST FOR KEY_LEN = {key_len}")
+        print(f"Started test for the key: \n{potential_key}")
+        print("Creating subprocesses...")
         cracked_key, cracked_key_value = shotgun_hillclimbing(cypher, key_len, alphabet,
                                                               ngram_file_path=ngram_file_path,
                                                               freqs=freqs,
@@ -107,7 +115,7 @@ def crack(cypher: str,
 
         enable_print()
         if cracked_key_value > target_score * len(cypher):
-            print(f"PROBLEM SOLVED FOR KEY_LEN = {key_len}")
+            print(f"The text is cracked.")
             break
 
     improved.sort(key=itemgetter(0), reverse=True)
@@ -154,8 +162,7 @@ def guess_key_len(text: str,
 
     with WorkerPool(n_jobs=len_to - len_from + 1, shared_objects=args, daemon=True) as pool:
         generator = pool.imap_unordered(guess_len_unwrapper, iterable_of_args=it_args)
-        for next_row in tqdm(generator, total=len(it_args)):
-            print(next_row)
+        for next_row in generator:
             if next_row[2]:
                 pool.terminate()
                 return invert_key(next_row[0], alphabet_len), next_row[1]
@@ -245,7 +252,7 @@ def upgrade_key(
                                          alphabet_len=alphabet_len)
             elif r < 0.95:
                 key_new = swap_rows(key_old)
-                for _ in range(5):
+                for _ in range(key_len * 2):
                     key_new = swap_rows(key_new)
             else:
                 key_new = slide_key(key_old, alphabet_len)
@@ -408,7 +415,6 @@ def single_process_shotgun(key_len: int,
                 buffer.append((value_old, key_old))
             else:
                 buffer.sort(key=itemgetter(0), reverse=True)
-                print(f"key_len = {key_len}, perc = {min(max(a * buffer[0][0] + b, 0.01), 1)}")
                 buffer[max_buffer - 1] = (value_old, key_old)
 
             # get random key from buffer or generate a new one
@@ -416,10 +422,6 @@ def single_process_shotgun(key_len: int,
                 key_old = random.choices(population=buffer, weights=buffer_weights, k=1)[0][1]
             else:
                 key_old = random_key(key_len, alphabet_len)
-
-    enable_print()
-    print(f"niters = {n_iters}")
-    disable_print()
 
     return invert_key(key_old, alphabet_len), value_old, found
 
@@ -562,6 +564,7 @@ def shotgun_hillclimbing(text: str,
                     if sound:
                         notifier.success()
                     t = time() - t0
+
                     print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
                     return invert_key(key_old, alphabet_len), value_old
 
@@ -594,10 +597,10 @@ def get_scores(text: str, alphabet: str, scorer: ngram.Ngram_score):
     text = utils.preprocess_text(text, alphabet)
     text_len = len(text)
 
-    #generate target score
+    # generate target score
     target_score = scorer.score(text) / text_len
 
-    #generate bad score
+    # generate bad score
     key = random_key(3, len(alphabet))
     enc = encrypt(text, key, alphabet)
     bad_score = scorer.score(enc) / text_len
