@@ -19,7 +19,15 @@ from ngram import Ngram_score as ns
 from utils import disable_print, enable_print
 
 
-def guess_len_unwraper(args, key_len, row_bend, elem_bend):
+def guess_len_unwrapper(args, key_len, row_bend, elem_bend):
+    """
+    The unwrapperW
+    :param args:
+    :param key_len:
+    :param row_bend:
+    :param elem_bend:
+    :return:
+    """
     table = single_process_shotgun(key_len, row_bend, elem_bend, *args)
     return table
 
@@ -34,7 +42,20 @@ def crack(cypher: str,
           bad_score: float = -5.8,
           print_threshold: float = -5,
           ) -> tuple[str, np.matrix]:
-    # try to crack cypher for key_len = 2
+    """
+    Crack the encrypted text.
+    :param cypher: Text to decode (to break)
+    :param alphabet: The alphabet of the text to crack
+    :param bigram_file_path: the file path of bigram file
+    :param ngram_file_path: the file path of ngram file
+    :param search_deepness: the number of iterations
+    :param freqs: the frequencies of letter occurrence
+    :param target_score: the target score for cypher to get
+    :param bad_score: the score of random text
+    :param print_threshold: the minimal score required to print solution to console
+    :return:
+    """
+
     print("Trying to crack the text using keys of shape 2x2...")
     disable_print()
     key, value = shotgun_hillclimbing(text=cypher, key_len=2, alphabet=alphabet, ngram_file_path=ngram_file_path,
@@ -119,18 +140,6 @@ def guess_key_len(text: str,
     :param freqs: frequency of letters
     :return: list sorted by value structured accordingly [[key,value(how good the key is), did it cracked the text?][key,...]...]
     """
-    # text: str,
-    # alphabet: str,
-    # ngram_file_path: str,
-    # bigram_file_path: str,
-    # t_limit: int = 60 * 5,
-    # search_deepness: int = 1000,
-    #
-    # freqs: list[float] | None = None,
-    #
-    # target_score: float = -2.4,
-    # bad_score: float = -3.6,
-    # print_threshold: float = -3.4,
     args = [text, alphabet, ngram_file_path, bigram_file_path, t_limit, search_deepness, freqs, target_score, bad_score]
 
     alphabet_len = len(alphabet)
@@ -145,14 +154,14 @@ def guess_key_len(text: str,
         elem_bend += 0.2
 
     with WorkerPool(n_jobs=len_to - len_from + 1, shared_objects=args, daemon=True) as pool:
-        generator = pool.imap_unordered(guess_len_unwraper, iterable_of_args=it_args)
+        generator = pool.imap_unordered(guess_len_unwrapper, iterable_of_args=it_args)
         for next_row in tqdm(generator, total=len(it_args)):
             print(next_row)
             if next_row[2]:
                 pool.terminate()
                 return invert_key(next_row[0], alphabet_len), next_row[1]
             table.append(next_row)
-    # table.sort(key=lambda row: (row[1]), reverse=True)
+
     table.sort(key=itemgetter(1), reverse=True)
     return table
 
@@ -185,7 +194,7 @@ def upgrade_key(
     """
     alphabet_len = len(alphabet)
     key_len = len(key)
-    # word_len = len(cypher)
+
     number_of_upgrades = 0
 
     key_old = key.copy()
@@ -200,11 +209,10 @@ def upgrade_key(
 
     ns_weights = np.concatenate(([1 for _ in range(key_len - 1)], [key_len - 1]))
 
-    # len 4, bend = 2.2, 1.1
     smart_threshold = 0.6
 
+    # try to upgrade the key 'iters' times
     for i in range(iters):
-
         perc = min(max(a * value_old + b, 0.01), 1)
         perc_rows = perc ** row_bend
         perc_elems = perc ** elem_bend
@@ -483,6 +491,7 @@ def shotgun_hillclimbing(text: str,
     # Create notifier, give a list of thresholds after which the beeping occurs.
     notifier = Notifier(sound_thresholds) if sound else None
 
+    # single process shotgun for key_lem = 2
     if key_len == 2:
         key_old = random_key(key_len, word_len)
 
@@ -510,6 +519,7 @@ def shotgun_hillclimbing(text: str,
             else:
                 key_old = random_key(key_len, alphabet_len)
 
+    # for other lengths launch multiprocessing
     else:
         args = [text, alphabet, scorer, a, b, row_bend, elem_bend, bigram_data, freqs, search_deepness,
                 target_score,
