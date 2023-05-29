@@ -5,13 +5,12 @@ import pandas as pd
 import crack_cipher
 import hill_encrypt
 import hill_key
-import ngram
 import utils
-from crack_cipher import shotgun_hillclimbing, guess_key_len
-from hill_encrypt import encrypt, decrypt
+from crack_cipher import guess_key_len
+from hill_encrypt import encrypt
 from hill_encrypt import invert_key
 from hill_key import random_key
-from utils import preprocess_text, generate_grams
+from utils import preprocess_text
 
 
 def crack_test():
@@ -87,7 +86,7 @@ def test_german():
 
     text = preprocess_text(text, german_alphabet)
 
-    key_len = 3
+    key_len = 4
     alphabet_len = len(german_alphabet)
     key = hill_key.random_key(key_len, alphabet_len)
 
@@ -98,7 +97,7 @@ def test_german():
     cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=german_alphabet,
                                                    bigram_file_path=german_bigrams,
                                                    ngram_file_path=german_trigrams,
-                                                   freqs=german_freqs, target_score=-3.2, bad_score=-6.2,
+                                                   freqs=german_freqs, target_score=-3.5, bad_score=-7,
                                                    print_threshold=-100)
 
     print(f"THIS IS CRACKED TEXT: {cracked_text}")
@@ -117,7 +116,6 @@ if __name__ == '__main__':
     # guess_me_keys_test()
     # gpu_test()
     # test_inversion()
-    # test_smart_rand()
 
     # crack_test()
     # test_trigram()
