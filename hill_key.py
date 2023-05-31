@@ -1,7 +1,6 @@
 import random
 
-import numpy as np
-from numpy import matrix, reshape, ceil
+from numpy import matrix, reshape, ceil, argmax
 from numpy.linalg import linalg
 
 from hill_encrypt import encrypt
@@ -167,7 +166,7 @@ def smart_rand_rows(key: matrix, cipher: str, alphabet: str, bigram_data: dict, 
 
         summed = recalculated.sum(axis=0)
 
-        cached_to_change = np.argmax([summed], axis=1).tolist()
+        cached_to_change = argmax([summed], axis=1).tolist()
 
     fixed = randomize_rows(key, r_indexes=cached_to_change, alphabet_len=alphabet_len,
                            perc_elems=perc_rows,

@@ -1,7 +1,6 @@
 import random
 
-import numpy as np
-from numpy import matrix, ceil
+from numpy import matrix, ceil, dot
 
 import utils
 
@@ -103,7 +102,7 @@ def encrypt(text: str, key: matrix, alphabet: str, freqs: list[float] | None = N
     # encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat) <-fast
 
     # v4
-    encrypted_chunks = [np.dot(key, c) % alphabet_len for c in chunks]
+    encrypted_chunks = [dot(key, c) % alphabet_len for c in chunks]
     encrypted_text = ''.join(alphabet[x] for chunk in encrypted_chunks for x in chunk.flat)
 
     return encrypted_text
