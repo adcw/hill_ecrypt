@@ -63,7 +63,7 @@ def guess_me_keys_test():
         text = file.read()
 
     processed = preprocess_text(text, alphabet)
-    letter_data = pd.read_csv("./english_letters.csv")
+    letter_data = read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
     ngram_file_path = 'english_trigrams.txt'
