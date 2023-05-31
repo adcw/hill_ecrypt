@@ -59,7 +59,7 @@ def crack(cypher: str,
     disable_print()
     key, value = shotgun_hillclimbing(text=cypher, key_len=2, alphabet=alphabet, ngram_file_path=ngram_file_path,
                                       bigram_file_path=bigram_file_path,
-                                      t_limit=30,
+                                      t_limit=10,
                                       search_deepness=1000,
                                       freqs=freqs,
                                       target_score=target_score,
@@ -78,7 +78,7 @@ def crack(cypher: str,
     # Get potential keys
     disable_print()
     guess_table = guess_key_len(cypher, alphabet, freqs=freqs, bigram_file_path=bigram_file_path,
-                                ngram_file_path=ngram_file_path, t_limit=60)
+                                ngram_file_path=ngram_file_path, t_limit=10)
     enable_print()
 
     best_keys = [row[0] for row in guess_table]
