@@ -66,13 +66,11 @@ def quality(callback: Callable, t_: int = 1):
     :param t_: test time
     :return: numer of iteration in test time
     """
-    disable_print()
     t0 = time.time()
     n_iters = 0
     while time.time() - t0 < t_:
         callback()
         n_iters += 1
-    enable_print()
 
     return n_iters
 

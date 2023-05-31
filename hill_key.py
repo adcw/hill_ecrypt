@@ -36,7 +36,6 @@ def random_key(key_len: int, alphabet_len: int):
         key = gen()
         iters += 1
         if is_valid_key(key, alphabet_len):
-            print(f"Key generated in {iters} iterations")
             return key
 
 
