@@ -1,6 +1,6 @@
 from string import ascii_uppercase as alphabet
 
-import pandas as pd
+from pandas import read_csv
 
 import crack_cipher
 import hill_encrypt
@@ -21,7 +21,7 @@ def crack_test():
         text = file.read()
 
     processed = preprocess_text(text, alphabet)
-    letter_data = pd.read_csv("./english_letters.csv")
+    letter_data = read_csv("./english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
     print(f"The key: \n{key}\n, ITS INVERSE: \n{invert_key(key, alphabet_len)}\n")

@@ -594,10 +594,10 @@ def get_scores(text: str, alphabet: str, scorer: ngram.Ngram_score):
     text = utils.preprocess_text(text, alphabet)
     text_len = len(text)
 
-    #generate target score
+    # generate target score
     target_score = scorer.score(text) / text_len
 
-    #generate bad score
+    # generate bad score
     key = random_key(3, len(alphabet))
     enc = encrypt(text, key, alphabet)
     bad_score = scorer.score(enc) / text_len
