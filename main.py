@@ -12,6 +12,57 @@ from hill_encrypt import invert_key
 from hill_key import random_key
 from utils import preprocess_text
 
+"""
+Szyfr Hilla
+Przemysław Kawa, Adrian Ćwiąkała
+
+Tematem projektu jest łamanie szyfru Hilla - szyfrowaniu opierającym się na mnożeniu tekstu jawnego przez klucz będący
+macierzą i odszyfrowywaniu polegającym na mnożeniu kryptotekstu przez odwrotność klucza.
+
+Zakładamy, że nie jest znana długość klucza. Proces łamania szyfru składa się z następujących etapów:
+
+1. Sprawdzenie, czy da się odszyfrować tekst kluczami o wymiarach 2x2
+
+    W tym celu korzystamy z klasycznej metody shotgun hillclimbing, lekko zmodyfikowanej na potrzeby zadania.
+    Pierwszym etapem jest wygenerowanie wielu losowych kluczy i wrzucenie ich do bufora.
+    Następnie za każym razem losowany jest klucz z bufora i podejmuje się próbę ulepszenia klucza.
+    Im lepszy klucz, tym większe prawdopodobieństwo, że zostanie wylosowany.
+    Po ulepszeniu nowy klucz trafia spowrotem do bufora zastępując najgorszy klucz.
+    Prócz tego występuje mała szansa na to, że zamiast losować klucz z bufora wygenerujemy nowy klucz.
+    
+2. Próba odgadnięcia długości klucza
+
+    W tym celu uruchamiamy algorytm opisany wyżej, lecz dla długości klucza od 3 do 6 (wartość tę można zmienić).
+    Każdy wariant długości klucza uruchamia się na osobnym prccesie, dzięki czemu skracany jest czas
+    wykonania wszystkich sprawdzań. Pozwala to na lekkie przedłużenie każdego z procesów, dzięki czemu ocena długości
+    klucza ma wyższą dokładność.
+
+3. Iterowanie po najbardziej prawdopodobnych długościach klucza i dokładna próba łamania szyfru.
+
+    W tym celu uruchamiana jest druga wersja shotgun hillclimbing, która skupia się na jednej długości klucza
+    i dzieli proces wspinaczki na wiele procesów, maksymalizując użycie dostępnych zasobów komputera.
+    Taki zabieg pozwala na stosunkowo szybkie łamanie szyfrów długości 3 oraz 4, teoretycznie i dłuższych.
+    
+    
+W projekcie zastosowano kilka sztuczek pozwalających na optymalizację łamania szyfru:
+- procent zmiany klucza maleje wraz ze wzrostem jakości odszyfrowywanego nim tekstu, dzięki czemu na samym początku
+  klucz jest zmieniany w stopniu znacznym, a pod koniec tylko nieznacznie.
+  
+- jeśli jakość klucza osiągnie 50% docelowej jakości, uruchamiana jest funkcja, która ocenia, które wiersze
+  należy zmieniać. Bierze się to stąd, że po przekroczeniu tej granicy generowany klucz często posiada połowę
+  wierszy identyczną co klucz łamany, co oznacza, że powinniśmy się skupić jedynie na wierszach różniących się.
+  Wybór wierszy do zmieniania polega na obliczeniu jakości bigramów kryptotekstu, a następnie rzutowaniu tej jakości
+  na pojedyńcze litery, dzięki czemu wiadomo, które litery wydają się być odstające. Następnie okresowo sumujemy
+  jakości dla każdej litery, otrzymując listę wartości o długości równej długości klucza. Wysokie wartości tej sumy
+  oznaczają, że odpowiadający tej sumie wiersz generowanego klucza tworzy w kryptotekście znaki wyraźnie odstające,
+  czyli należy zmieniać ten wiersz. Metoda ta w 95% przypadków poprawnie wskazuje wiersz, który różni się
+   od wiersza docelowego
+   
+- w związku z tym, że często generowany klucz posiada prawidłowe wiersze, lecz ułożone w złej kolejności,
+  z małą szansą zamienia się w sposób losowy kolejność wierszy klucza. Zamiana dwóch wierszy klucza wykonywana jest
+  ilość razy proporcjonalną do długości klucza.
+"""
+
 
 def crack_test():
     key_l = 5
@@ -86,7 +137,7 @@ def test_german():
 
     text = preprocess_text(text, german_alphabet)
 
-    key_len = 5
+    key_len = 3
     alphabet_len = len(german_alphabet)
     key = hill_key.random_key(key_len, alphabet_len)
 
