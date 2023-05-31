@@ -37,11 +37,9 @@ def crack_test():
     2       | 1.40     | 0.99      | 0.13, 8.82, 10.89, 24.35(ała), 83.71(bardzo wredny klucz)
     3       | 1.9      | 0.9       | 99.42, 162.98 237.22
     4       | 2        | 1.1       | 720.50
-    5       | 4        | 1.5       | did not resolve in 2 hours
+    5       | 4        | 1.5       | 
     2       | 1.3      | 0.8       |
     
-    
-    5, trigram: 0.11940322755261186 perc
     """
 
     cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=alphabet,
