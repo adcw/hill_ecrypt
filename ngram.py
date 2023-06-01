@@ -8,7 +8,7 @@ class Ngram_score(object):
 
         gram_size = None
 
-        for line in open(ngram_file):
+        for line in open(ngram_file, encoding="UTF-8"):
             key, count = line.split(sep)
 
             if gram_size is None:
