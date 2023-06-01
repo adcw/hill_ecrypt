@@ -34,18 +34,18 @@ def crack_test():
     key_l = 5
     alphabet_len = len(alphabet)
 
-    with open("./text.txt", "r") as file:
+    with open("./text.txt", "r", encoding="UTF-8") as file:
         text = file.read()
 
     processed = preprocess_text(text, alphabet)
-    letter_data = read_csv("./english_letters.csv")
+    letter_data = read_csv("language_data/english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
     print(f"The key: \n{key}\n, ITS INVERSE: \n{invert_key(key, alphabet_len)}\n")
 
     encrypted = encrypt(processed, key, alphabet, freqs)
 
-    ngram_file_path = 'english_trigrams.txt'
+    ngram_file_path = 'language_data/english_trigrams.txt'
     # ngram_file_path = 'english_bigrams.txt'
 
     """
@@ -60,9 +60,9 @@ def crack_test():
     """
 
     cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=alphabet,
-                                                   bigram_file_path='english_bigrams.txt',
+                                                   bigram_file_path='language_data/english_bigrams.txt',
                                                    ngram_file_path=ngram_file_path,
-                                                   freqs=freqs)
+                                                   freqs_file_path=freqs)
 
     print(f"THIS IS CRACKED TEXT: {cracked_text}")
 
@@ -78,13 +78,13 @@ def guess_me_keys_test():
         text = file.read()
 
     processed = preprocess_text(text, alphabet)
-    letter_data = read_csv("./english_letters.csv")
+    letter_data = read_csv("language_data/english_letters.csv")
     freqs = letter_data['frequency'].tolist()
     key = random_key(key_l, alphabet_len)
-    ngram_file_path = 'english_trigrams.txt'
+    ngram_file_path = 'language_data/english_trigrams.txt'
     print(f"The key: \n{key}\n, ITS INVERSE: \n{invert_key(key, alphabet_len)}\n")
     encrypted = encrypt(processed, key, alphabet, freqs)
-    table = guess_key_len(encrypted, alphabet, freqs=freqs, bigram_file_path='english_bigrams.txt',
+    table = guess_key_len(encrypted, alphabet, freqs=freqs, bigram_file_path='language_data/english_bigrams.txt',
                           ngram_file_path=ngram_file_path, t_limit=60 * 5)
     print(table)
     print(f'I guess key length is= {table[0][0].shape[0]}')
@@ -93,58 +93,55 @@ def guess_me_keys_test():
     pass
 
 
-def test_german():
-    german_alphabet, german_bigrams, german_trigrams, german_freqs = utils.get_german()
-
-    with open("german_text_to_crack.txt") as file:
+def test_crack(alph: str = alphabet,
+               bigram_file_path: str = './language_data/english_bigrams.txt',
+               ngram_file_path: str = './language_data/english_trigrams.txt',
+               letter_freqs_file_path: str = './language_data/english_letter_freqs.txt',
+               text_to_crack_path: str = './english_text_to_crack.txt'):
+    with open(text_to_crack_path, encoding="UTF-8") as file:
         text = file.read()
 
-    text = preprocess_text(text, german_alphabet)
+    freqs = utils.parse_freqs(freqs_file_path=letter_freqs_file_path)
+
+    text = preprocess_text(text, alphabet=alph)
 
     key_len = 3
-    alphabet_len = len(german_alphabet)
+    alphabet_len = len(alph)
     key = hill_key.random_key(key_len, alphabet_len)
 
     print(f"KEY:\n{key}, inverse:\n{hill_encrypt.invert_key(key, alphabet_len)}")
 
-    encrypted = encrypt(text, key, german_alphabet, german_freqs)
+    encrypted = encrypt(text, key, alph, freqs)
 
-    cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=german_alphabet,
-                                                   bigram_file_path=german_bigrams,
-                                                   ngram_file_path=german_trigrams,
-                                                   freqs=german_freqs, target_score=-3.5, bad_score=-7,
+    cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=alph,
+                                                   bigram_file_path=bigram_file_path,
+                                                   ngram_file_path=ngram_file_path,
+                                                   freqs_file_path=freqs, target_score=-3.5, bad_score=-7,
                                                    print_threshold=-100)
 
-    print(f"THIS IS CRACKED TEXT: {cracked_text}")
+    with open("./output.txt", mode="w+", encoding="UTF-8") as file:
+        file.write(cracked_text)
+    print(f"Cracked text was saved to the file.")
 
-
-# documenting
 
 if __name__ == '__main__':
-    # swap_rows_test()
-    # determinant_test()
-    # perfomence_test()
-    # smart_swap_test()
-    # test_chunkify_text()
-    # change_key_performance()
-    # crack_test()
-    # guess_me_keys_test()
-    # gpu_test()
-    # test_inversion()
+    # Łamanie tekstu angielskiego
+    # test_crack()
 
-    # crack_test()
-    # test_trigram()
-    # test_shotgun(alphabet, n_tests=50)
+    # Łamanie tekstu francuskiego
+    french_alphabet = utils.get_alphabet('language_data/french_alphabet.txt')
 
-    # test_ngram_numbers()
+    test_crack(alph=french_alphabet,
+               bigram_file_path="language_data/french_bigrams.txt",
+               ngram_file_path="language_data/french_trigrams.txt",
+               letter_freqs_file_path="language_data/french_letter_freqs.txt",
+               text_to_crack_path="french_text_to_crack.txt")
 
-    test_german()
-    # with open('./german_text_in', encoding="UTF-8") as file:
-    #     txt = file.read()
-    #     scorer = ngram.Ngram_score("./german_trigrams.txt")
-    #     target, bad = crack_cipher.get_scores(txt, "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß", scorer)
+    # utils.generate_grams("./language_data/french_text_sample.txt", "./language_data/french_bigrams.txt",
+    #                      "./language_data/french_alphabet.txt", 2)
     #
-    #     print(f"target = {target}, bad = {bad}")
-
-    # utils.generate_grams('./german_text_in', './german_trigrams.txt', n=3, alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß")
-    # utils.generate_grams('./german_text_in', './german_bigrams.txt.txt', n=2, alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß")
+    # utils.generate_grams("./language_data/french_text_sample.txt", "./language_data/french_trigrams.txt",
+    #                      "./language_data/french_alphabet.txt", 3)
+    #
+    # utils.genereate_freqs("./language_data/french_text_sample.txt", "./language_data/french_letter_freqs.txt",
+    #                       french_alphabet)
