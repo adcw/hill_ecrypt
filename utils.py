@@ -75,7 +75,16 @@ def quality(callback: Callable, t_: int = 1):
     return n_iters
 
 
-def generate_grams(in_file_path: str, out_file_path: str, alphabet: str, n: int = 2):
+def get_alphabet(alphabet_file_path: str, encoding: str = "UTF-8"):
+    with open(alphabet_file_path, encoding=encoding) as file:
+        text = file.read().strip()
+        return text
+
+
+def generate_grams(in_file_path: str, out_file_path: str, alphabet_file_path: str, n: int = 2):
+    with open(alphabet_file_path, encoding="UTF-8") as file:
+        alphabet = file.read().strip()
+
     with open(in_file_path, encoding='UTF-8') as file_in:
         text = file_in.read()
         text = preprocess_text(text, alphabet)
@@ -90,17 +99,39 @@ def generate_grams(in_file_path: str, out_file_path: str, alphabet: str, n: int 
         else:
             dictionary[gram] = 1
 
-    entries = [f"{key} {value}" for key, value in
+    _save_dict_to_file(dictionary, out_file_path)
+
+
+def _save_dict_to_file(dictionary, out_file_path, with_key=True):
+    entries = [(f"{key} {value}" if with_key else str(value)) for key, value in
                sorted([i for i in dictionary.items()], key=operator.itemgetter(1), reverse=True)]
-
     text = "\n".join(entries)
-
     with open(out_file_path, encoding='UTF-8', mode='w+') as file:
         file.write(text)
 
 
-def get_german():
-    german_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß"
+def genereate_freqs(in_file_path: str, out_file_path: str, alphabet: str):
+    with open(in_file_path, encoding='UTF-8') as file_in:
+        text = file_in.read()
+        text = preprocess_text(text, alphabet)
+
+    text_len = len(text)
+    counts = dict()
+
+    for letter in text:
+        if letter in counts:
+            counts[letter] += 1
+        else:
+            counts[letter] = 0
+
+    for key, value in counts.items():
+        counts[key] = value / text_len
+
+    _save_dict_to_file(counts, out_file_path, with_key=False)
+
+
+def get_language_data():
+    alph = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß"
     german_bigrams = "./german_bigrams.txt"
     german_trigrams = "./german_trigrams.txt"
     german_letter_freqs = "./german_letters.csv"
@@ -108,4 +139,9 @@ def get_german():
     letter_data = read_csv(german_letter_freqs)
     freqs = letter_data['frequency'].tolist()
 
-    return german_alphabet, german_bigrams, german_trigrams, freqs
+    return alph, german_bigrams, german_trigrams, freqs
+
+
+def parse_freqs(freqs_file_path):
+    with open(freqs_file_path, encoding="UTF-8") as file:
+        return [float(val) for val in file.read().split("\n")]
