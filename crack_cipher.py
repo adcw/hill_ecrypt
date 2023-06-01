@@ -36,7 +36,7 @@ def crack(cypher: str,
           bigram_file_path: str = 'english_bigrams.txt',
           ngram_file_path: str = 'english_trigrams.txt',
           search_deepness: int = 1000,
-          freqs: list[float] | None = None,
+          freqs_file_path: list[float] | None = None,
           target_score: float = -3.7,
           bad_score: float = -5.8,
           print_threshold: float = -5,
@@ -48,7 +48,7 @@ def crack(cypher: str,
     :param bigram_file_path: the file path of bigram file
     :param ngram_file_path: the file path of ngram file
     :param search_deepness: the number of iterations
-    :param freqs: the frequencies of letter occurrence
+    :param freqs_file_path: the frequencies of letter occurrence
     :param target_score: the target score for cypher to get
     :param bad_score: the score of random text
     :param print_threshold: the minimal score required to print solution to console
@@ -59,9 +59,9 @@ def crack(cypher: str,
     disable_print()
     key, value = shotgun_hillclimbing(text=cypher, key_len=2, alphabet=alphabet, ngram_file_path=ngram_file_path,
                                       bigram_file_path=bigram_file_path,
-                                      t_limit=10,
+                                      t_limit=60,
                                       search_deepness=1000,
-                                      freqs=freqs,
+                                      freqs=freqs_file_path,
                                       target_score=target_score,
                                       bad_score=bad_score,
                                       print_threshold=print_threshold,
@@ -71,13 +71,13 @@ def crack(cypher: str,
 
     enable_print()
     if value > target_score * 120:
-        return hill_encrypt.decrypt(cypher, key, alphabet, freqs), key
+        return hill_encrypt.decrypt(cypher, key, alphabet, freqs_file_path), key
 
     print("Cracking failed. Attempting to guess the length of the key...")
 
     # Get potential keys
     disable_print()
-    guess_table = guess_key_len(cypher, alphabet, freqs=freqs, bigram_file_path=bigram_file_path,
+    guess_table = guess_key_len(cypher, alphabet, freqs=freqs_file_path, bigram_file_path=bigram_file_path,
                                 ngram_file_path=ngram_file_path, t_limit=10)
     enable_print()
 
@@ -98,7 +98,7 @@ def crack(cypher: str,
         print("Creating subprocesses...")
         cracked_key, cracked_key_value = shotgun_hillclimbing(cypher, key_len, alphabet,
                                                               ngram_file_path=ngram_file_path,
-                                                              freqs=freqs,
+                                                              freqs=freqs_file_path,
                                                               bigram_file_path=bigram_file_path,
                                                               t_limit=60 * 40,
                                                               target_score=-3.7,
@@ -121,7 +121,7 @@ def crack(cypher: str,
     improved.sort(key=itemgetter(0), reverse=True)
     cracked_key = improved[0][1]
 
-    return hill_encrypt.decrypt(cypher, cracked_key, alphabet, freqs), cracked_key
+    return hill_encrypt.decrypt(cypher, cracked_key, alphabet, freqs_file_path), cracked_key
 
 
 def guess_key_len(text: str,
@@ -252,7 +252,7 @@ def upgrade_key(
                                          alphabet_len=alphabet_len)
             elif r < 0.95:
                 key_new = swap_rows(key_old)
-                for _ in range(key_len * 2):
+                for _ in range(key_len * 3):
                     key_new = swap_rows(key_new)
             else:
                 key_new = slide_key(key_old, alphabet_len)
@@ -269,11 +269,12 @@ def upgrade_key(
 
             if value_normalized >= print_threshold:
                 print(
-                    f"i = {i}, decoded: {decoded_new[:25]}, value: {value_new}, perc = {perc:.3f} "
+                    f"i = {i}, value: {value_new}, perc = {perc:.3f} "
                     f"perc_rows = {perc_rows:.3f}, perc_elems = {perc_elems:.3f} key = \n{key_new}\n")
+                # print("A")
                 number_of_upgrades += 1
             if value_normalized > target_score:
-                print(f'BEST: {decoded_new}, key = \n{key_new}')
+                # print(f'BEST: {decoded_new}, key = \n{key_new}')
                 found = True
                 key_old = key_new
                 value_old = value_new
@@ -375,7 +376,7 @@ def single_process_shotgun(key_len: int,
 
     a, b = perc_slope_function(bad_score, target_score)
 
-    with open(bigram_file_path, 'r') as file:
+    with open(bigram_file_path, 'r', encoding="UTF-8") as file:
         content = file.readlines()
         splitted = np.array([line.replace("\n", "").split(" ") for line in content])
         splitted[:, 1] = normalize([splitted[:, 1]])
@@ -483,7 +484,7 @@ def shotgun_hillclimbing(text: str,
 
     a, b = perc_slope_function(bad_score, target_score)
 
-    with open(bigram_file_path, 'r') as file:
+    with open(bigram_file_path, 'r', encoding="UTF-8") as file:
         content = file.readlines()
         splitted = np.array([line.replace("\n", "").split(" ") for line in content])
         splitted[:, 1] = normalize([splitted[:, 1]])
