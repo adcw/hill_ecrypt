@@ -70,35 +70,13 @@ Do łamania szyfru wykorzystano klasyczną metodę shotgun z kilkoma modyfikacja
 #     pass
 
 
-# def guess_me_keys_test():
-#     """Guessing between 3 and 5"""
-#     key_l = 3
-#     alphabet_len = len(alphabet)
-#
-#     with open("./text.txt", "r") as file:
-#         text = file.read()
-#
-#     processed = preprocess_text(text, alphabet)
-#     letter_data = read_csv("language_data/english_letters.csv")
-#     freqs = letter_data['frequency'].tolist()
-#     key = random_key(key_l, alphabet_len)
-#     ngram_file_path = 'language_data/english_trigrams.txt'
-#     print(f"The key: \n{key}\n, ITS INVERSE: \n{invert_key(key, alphabet_len)}\n")
-#     encrypted = encrypt(processed, key, alphabet, freqs)
-#     table = guess_key_len(encrypted, alphabet, freqs=freqs, bigram_file_path='language_data/english_bigrams.txt',
-#                           ngram_file_path=ngram_file_path, t_limit=60 * 5)
-#     print(table)
-#     print(f'I guess key length is= {table[0][0].shape[0]}')
-#     print(f'True key length = {key_l}')
-#
-#     pass
-
-
 def test_crack(alph: str = alphabet,
                bigram_file_path: str = './language_data/english_bigrams.txt',
                ngram_file_path: str = './language_data/english_trigrams.txt',
                letter_freqs_file_path: str = './language_data/english_letter_freqs.txt',
-               text_to_crack_path: str = './english_text_to_crack.txt'):
+               text_to_crack_path: str = './english_text_to_crack.txt',
+               key_len2_timeout: int = 10,
+               crack_timeout: int = 4 * 60, target_score=-3.5, bad_score=-7):
     with open(text_to_crack_path, encoding="UTF-8") as file:
         text = file.read()
 
@@ -117,8 +95,9 @@ def test_crack(alph: str = alphabet,
     cracked_text, cracked_key = crack_cipher.crack(cypher=encrypted, alphabet=alph,
                                                    bigram_file_path=bigram_file_path,
                                                    ngram_file_path=ngram_file_path,
-                                                   freqs_file_path=freqs, target_score=-3.5, bad_score=-7,
-                                                   print_threshold=-100)
+                                                   freqs_file_path=freqs, target_score=target_score,
+                                                   bad_score=bad_score,
+                                                   print_threshold=-100, key_len2_timeout=key_len2_timeout)
 
     with open("./output.txt", mode="w+", encoding="UTF-8") as file:
         file.write(cracked_text)
@@ -129,20 +108,31 @@ if __name__ == '__main__':
     # Łamanie tekstu angielskiego
     # test_crack()
 
-    # Łamanie tekstu francuskiego
-    french_alphabet = utils.get_alphabet('language_data/french_alphabet.txt')
+    # Łamanie tekstu polskiego
+    polish_alphabet = utils.get_alphabet('language_data/polish_alphabet.txt')
+    test_crack(alph=polish_alphabet,
+               bigram_file_path="language_data/polish_bigrams.txt",
+               ngram_file_path="language_data/polish_trigrams.txt",
+               letter_freqs_file_path="language_data/polish_letter_freqs.txt",
+               text_to_crack_path="polish_text_to_crack.txt",
+               key_len2_timeout=20,
+               bad_score=-7,
+               target_score=-4.8)
 
-    test_crack(alph=french_alphabet,
-               bigram_file_path="language_data/french_bigrams.txt",
-               ngram_file_path="language_data/french_trigrams.txt",
-               letter_freqs_file_path="language_data/french_letter_freqs.txt",
-               text_to_crack_path="french_text_to_crack.txt")
+    # Łamanie tekstu niemieciego
+    # german_alphabet = utils.get_alphabet('language_data/german_alphabet.txt')
+    # test_crack(alph=german_alphabet,
+    #            bigram_file_path="language_data/german_bigrams.txt",
+    #            ngram_file_path="language_data/german_trigrams.txt",
+    #            letter_freqs_file_path="language_data/german_letter_freqs.txt",
+    #            text_to_crack_path="german_text_to_crack.txt",
+    #            key_len2_timeout=10)
 
-    # utils.generate_grams("./language_data/french_text_sample.txt", "./language_data/french_bigrams.txt",
-    #                      "./language_data/french_alphabet.txt", 2)
+    # utils.generate_grams("./language_data/polish_text_sample.txt", "./language_data/polish_bigrams.txt",
+    #                      "./language_data/polish_alphabet.txt", 2)
     #
-    # utils.generate_grams("./language_data/french_text_sample.txt", "./language_data/french_trigrams.txt",
-    #                      "./language_data/french_alphabet.txt", 3)
+    # utils.generate_grams("./language_data/polish_text_sample.txt", "./language_data/polish_trigrams.txt",
+    #                      "./language_data/polish_alphabet.txt", 3)
     #
-    # utils.genereate_freqs("./language_data/french_text_sample.txt", "./language_data/french_letter_freqs.txt",
-    #                       french_alphabet)
+    # utils.genereate_freqs("./language_data/polish_text_sample.txt", "./language_data/polish_letter_freqs.txt",
+    #                       polish_alphabet)
