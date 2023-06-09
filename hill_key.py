@@ -76,12 +76,12 @@ def randomize_rows(key: matrix, perc_rows: float, perc_elems: float, alphabet_le
         return k
 
     # repeat until a valid key is generated
-    while True:
+    for _ in range(100):
         temp = key.copy()
         randomized_key = randomize(temp)
         if is_valid_key(randomized_key, alphabet_len):
             return randomized_key
-
+    return key
 
 def swap_rows(key: matrix) -> matrix:
     """
@@ -129,11 +129,14 @@ def slide_key(key, alphabet_len: int, horizontal: bool = False) -> matrix:
 
         return k.T if not horizontal else k
 
-    while True:
+    for _ in range(100):
         result = slide(temp)
         if is_valid_key(result, alphabet_len):
             return result
+    return key
 
+
+# measures
 cached_to_change: list[int] | None = None
 
 
