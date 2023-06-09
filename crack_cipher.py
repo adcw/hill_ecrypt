@@ -40,9 +40,13 @@ def crack(cypher: str,
           target_score: float = -3.7,
           bad_score: float = -5.8,
           print_threshold: float = -5,
+          key_len2_timeout: int = 10,
+          crack_timeout: int = 40 * 60
           ) -> tuple[str, np.matrix]:
     """
     Crack the encrypted text.
+    :param crack_timeout: How long to try cracking with the pre-guessed key length?
+    :param key_len2_timeout: Parameter specifying how long to try cracking the key with keys of length 2
     :param cypher: Text to decode (to break)
     :param alphabet: The alphabet of the text to crack
     :param bigram_file_path: the file path of bigram file
@@ -59,7 +63,7 @@ def crack(cypher: str,
     disable_print()
     key, value = shotgun_hillclimbing(text=cypher, key_len=2, alphabet=alphabet, ngram_file_path=ngram_file_path,
                                       bigram_file_path=bigram_file_path,
-                                      t_limit=60,
+                                      t_limit=key_len2_timeout,
                                       search_deepness=1000,
                                       freqs=freqs_file_path,
                                       target_score=target_score,
@@ -73,7 +77,7 @@ def crack(cypher: str,
     if value > target_score * 120:
         return hill_encrypt.decrypt(cypher, key, alphabet, freqs_file_path), key
 
-    print("Cracking failed. Attempting to guess the length of the key...")
+    print("Text doesn't seem to be encrypted using key len = 2. Attempting to guess the length of the key...")
 
     # Get potential keys
     disable_print()
@@ -100,7 +104,7 @@ def crack(cypher: str,
                                                               ngram_file_path=ngram_file_path,
                                                               freqs=freqs_file_path,
                                                               bigram_file_path=bigram_file_path,
-                                                              t_limit=60 * 40,
+                                                              t_limit=crack_timeout,
                                                               target_score=-3.7,
                                                               bad_score=bad_score,
                                                               print_threshold=print_threshold,
@@ -269,7 +273,7 @@ def upgrade_key(
 
             if value_normalized >= print_threshold:
                 print(
-                    f"i = {i}, value: {value_new}, perc = {perc:.3f} "
+                    f"i = {i}, value: {value_new}, perc = {perc:.3f}, dec = {decoded_new[:20]} "
                     f"perc_rows = {perc_rows:.3f}, perc_elems = {perc_elems:.3f} key = \n{key_new}\n")
                 # print("A")
                 number_of_upgrades += 1
