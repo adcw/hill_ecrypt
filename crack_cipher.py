@@ -7,7 +7,6 @@ import numpy as np
 import winsound
 from mpire import WorkerPool
 from sklearn.preprocessing import normalize
-from tqdm import tqdm
 
 import hill_encrypt
 import ngram
@@ -261,7 +260,7 @@ def upgrade_key(
             else:
                 key_new = slide_key(key_old, alphabet_len)
 
-            if random.random() < 0.05:
+            if random.random() < 0.05 and key_len != 2:
                 key_new = slide_key(key_old, alphabet_len, horizontal=True)
 
         decoded_new = encrypt(cypher, key_new, alphabet, freqs)
