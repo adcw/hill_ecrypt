@@ -1,12 +1,3 @@
-from string import ascii_uppercase as alphabet
-
-import crack_cipher
-import hill_encrypt
-import hill_key
-import utils
-from hill_encrypt import encrypt
-from utils import preprocess_text
-
 """
 Szyfr Hilla
 Przemysław Kawa, Adrian Ćwiąkała
@@ -18,20 +9,20 @@ Do łamania szyfru wykorzystano klasyczną metodę shotgun z kilkoma modyfikacja
 
 - procent zmiany klucza maleje wraz ze wzrostem jakości odszyfrowywanego nim tekstu, dzięki czemu na samym początku
   klucz jest zmieniany w stopniu znacznym, a pod koniec tylko nieznacznie.
-  
+
 - Jeśli zbliżamy się do rozwiązania, uruchamiana jest funkcja oceniająca, które wiersze należy zmienić by złamać klucz.
   Metoda ta bazuje na obliczaniu jakości metodą bigram i ocenianiu które litery odszyfrowanego tekstu są już poprawne,
   a które należy dalej zmieniać. Zmieniane są tylko te wiersze, które generują litery nie pasujące do pozostałych.
-  
+
 - Wyniki testów manualnych na języku angielskim:
     Minimalna długość tekstu przy kluczu 2x2 dla którego algorytm zawsze wykona pracę poniżej 30s to 290
-    Średni czas i procent udanych rozwiązań kiedy długość klucza jest nie znana i długość tekstu to 3336 
+    Średni czas i procent udanych rozwiązań kiedy długość klucza jest nie znana i długość tekstu to 3336
     klucze nie rozwiązane w ciągu określonego czasu określiłem jako nie rozwiązane
     key_len     |    mean_time    |   success rate  | min/max recorded | time_limit
     2                3.35             100%           0.03/19.49          30s
     3                165.6            98,5%          127.2/226.3         1 hour
     4                720.4            82%            495.8/1312.3(21min) 1 hour    NOTE: jeśli nie uwzględnimy wynik 1312 to średnia wyjdzie 644.6
-    
+
     NOTE for above ken_len 2: Warto zaznaczyć że proces zamykania i otwierania pod procesów trwa chwile przed i po zakończeniu
     na moim komputerze zajmuje to w sumie około 20s (u kolegów zauważyłem inne czasy).
     Dodatkowo metoda próbuje rozwiązać ken_len 2 za każdym razem (gdy długość klucza nie jest znana)
@@ -39,6 +30,15 @@ Do łamania szyfru wykorzystano klasyczną metodę shotgun z kilkoma modyfikacja
     Więc np wynik 132s ken_len 3 w teście, to 71s rozwiązywania samego klucza 3.
     Platforma testowa to: amd ryzen 9 3900xt
 """
+
+from string import ascii_uppercase as alphabet
+
+import crack_cipher
+import hill_encrypt
+import hill_key
+import utils
+from hill_encrypt import encrypt
+from utils import preprocess_text
 
 
 #
