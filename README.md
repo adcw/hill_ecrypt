@@ -15,6 +15,7 @@ The classic shotgun method with a few modifications was used to crack the cipher
    and which need to be changed. Only those rows that generate letters that do not match the others are changed.
 - Results of manual tests in English:
      The minimum length of a text with a 2x2 key for which the algorithm will always do the work in less than 30s is 290
+     
      Average time and percentage of successful solutions when the key length is unknown and the text length is 3336
      keys not resolved within the specified time period are marked as not resolved
 
