@@ -18,10 +18,11 @@ Do łamania szyfru wykorzystano klasyczną metodę shotgun z kilkoma modyfikacja
     Minimalna długość tekstu przy kluczu 2x2 dla którego algorytm zawsze wykona pracę poniżej 30s to 290
     Średni czas i procent udanych rozwiązań kiedy długość klucza jest nie znana i długość tekstu to 3336
     klucze nie rozwiązane w ciągu określonego czasu określiłem jako nie rozwiązane
-    key_len     |    mean_time    |   success rate  | min/max recorded | time_limit
-    2                3.35             100%           0.03/19.49          30s
-    3                165.6            98,5%          127.2/226.3         1 hour
-    4                720.4            82%            495.8/1312.3(21min) 1 hour    NOTE: jeśli nie uwzględnimy wynik 1312 to średnia wyjdzie 644.6
+    key_len     |    mean_time    |   success rate  | min/max recorded | time_limit | sample_size
+    2                3.35             100%           0.03/19.49          30s          200
+    3                165.6            98,5%          127.2/226.3         1 hour       90
+    4                720.4            82%            495.8/1312.3(21min) 1 hour       60
+    NOTE: jeśli nie uwzględnimy wynik 1312 to średnia wyjdzie 644.6
 
     NOTE for above ken_len 2: Warto zaznaczyć że proces zamykania i otwierania pod procesów trwa chwile przed i po zakończeniu
     na moim komputerze zajmuje to w sumie około 20s (u kolegów zauważyłem inne czasy).
@@ -29,6 +30,9 @@ Do łamania szyfru wykorzystano klasyczną metodę shotgun z kilkoma modyfikacja
     przez 30s powoduje to że wyniki są zawyżone w sumie około 50s+-10s.
     Więc np wynik 132s ken_len 3 w teście, to 71s rozwiązywania samego klucza 3.
     Platforma testowa to: amd ryzen 9 3900xt
+
+
+    PS Uwaga! funkcje disablePrint i enablePrint mogą nie działać na starszych wersjach pyhton niż 3.11
 """
 
 from string import ascii_uppercase as alphabet
