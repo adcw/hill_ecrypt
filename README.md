@@ -19,11 +19,11 @@ The classic shotgun method with a few modifications was used to crack the cipher
      Average time and percentage of successful solutions when the key length is unknown and the text length is 3336
      keys not resolved within the specified time period are marked as not resolved
 
-| key_len  | mean_timer | success rate | min/max_recorded | time_limit |
-| ------------- | ------------- | ------------- | ------------- | ------------- |
-| 2  | 3.35  | 100%  | 0.03/19.49  | 30s  |
-| 3  | 165.6  | 98.5%  | 127.2/226.3  | 1 hour  |
-| 4  | 720.4  | 82%  | 495.8/1312.3(21min)  | 1 hour  |
+| key_len  | mean_timer | success rate | min/max_recorded | time_limit | sample_size |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| 2  | 3.35  | 100%  | 0.03/19.49  | 30s  | 200  |
+| 3  | 165.6  | 98.5%  | 127.2/226.3  | 1 hour  | 90  |
+| 4  | 720.4  | 82%  | 495.8/1312.3(21min)  | 1 hour  | 60  |
 
 NOTE: if we do not include the result of 1312, the average will be 644.6 
 
