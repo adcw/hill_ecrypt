@@ -519,7 +519,7 @@ def shotgun_hillclimbing(text: str,
                 if notifier is not None:
                     notifier.success()
                 t = time() - t0
-                print(f"time: {t:.2f}, iters: {itr}, {t / max(itr, 1):.2f}s/it")
+                print(f"time: {t:.2f}")
                 return invert_key(key_old, alphabet_len), value_old
             else:
                 key_old = random_key(key_len, alphabet_len)

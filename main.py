@@ -22,7 +22,7 @@ Do łamania szyfru wykorzystano klasyczną metodę shotgun z kilkoma modyfikacja
     2                3.35             100%           0.03/19.49          30s          200
     3                165.6            98,5%          127.2/226.3         1 hour       90
     4                720.4            82%            495.8/1312.3(21min) 1 hour       60
-    NOTE: jeśli nie uwzględnimy wynik 1312 to średnia wyjdzie 644.6
+    NOTE: jeśli nie uwzględnimy wynik 1312, to średnia wyjdzie 644.6
 
     NOTE for above ken_len 2: Warto zaznaczyć że proces zamykania i otwierania pod procesów trwa chwile przed i po zakończeniu
     na moim komputerze zajmuje to w sumie około 20s (u kolegów zauważyłem inne czasy).
@@ -116,7 +116,8 @@ def test_crack(alph: str = alphabet,
                                                    print_threshold=-100,
                                                    crack_timeout=60 * 60,
                                                    key_len2_timeout=key_len2_timeout)
-
+    print(f"cracked_KEY:\n{cracked_key}")
+    print(f"\ncracked_text:\n{cracked_text}")
     with open("./output.txt", mode="w+", encoding="UTF-8") as file:
         file.write(cracked_text)
     print(f"Cracked text was saved to the file: output.txt.")
